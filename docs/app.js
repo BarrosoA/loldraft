@@ -37,11 +37,11 @@ const EPSILON = 0.005;
 // Draft state
 const state = {
   allies: [
-    { role: 'TOP', cid: null, name: '', icon: '' },
-    { role: 'JGL', cid: null, name: '', icon: '' },
-    { role: 'MID', cid: null, name: '', icon: '' },
-    { role: 'BOT', cid: null, name: '', icon: '' },
-    { role: 'SUP', cid: null, name: '', icon: '' }
+    { id: 'top', role: 'TOP', cid: null, name: '', icon: '' },
+    { id: 'jgl', role: 'JGL', cid: null, name: '', icon: '' },
+    { id: 'mid', role: 'MID', cid: null, name: '', icon: '' },
+    { id: 'bot', role: 'BOT', cid: null, name: '', icon: '' },
+    { id: 'sup', role: 'SUP', cid: null, name: '', icon: '' }
   ],
   enemies: [
     { slotIndex: 1, cid: null, name: '', icon: '', inference: '' },
@@ -513,84 +513,85 @@ function setHudView(view) {
   renderRecommendations(currentScoredCandidates);
 }
 
-let draggedAllyIndex = null;
+let draggedCard = null;
 let isDraggingAlly = false;
+
+function syncAlliesOrderFromDOM() {
+  const cards = Array.from(allySlotsContainer.querySelectorAll('.slot-card.draggable-slot'));
+  const activeAllyRef = (state.activeTarget.team === 'ally' && state.allies[state.activeTarget.index])
+    ? state.allies[state.activeTarget.index]
+    : null;
+
+  const newAllies = [];
+  cards.forEach((c, i) => {
+    const ally = state.allies.find(a => (a.id || a.role.toLowerCase()) === c.dataset.allyId);
+    if (ally) newAllies.push(ally);
+
+    const numEl = c.querySelector('.slot-pick-num');
+    if (numEl) numEl.textContent = `#${i + 1}`;
+    c.dataset.idx = i;
+
+    const removeBtn = c.querySelector('.slot-remove-btn');
+    if (removeBtn) removeBtn.dataset.idx = i;
+  });
+
+  if (newAllies.length === state.allies.length) {
+    state.allies = newAllies;
+  }
+
+  if (activeAllyRef) {
+    const newIdx = state.allies.indexOf(activeAllyRef);
+    if (newIdx !== -1) {
+      state.activeTarget.index = newIdx;
+    }
+  }
+}
 
 function attachAllySlotDragHandlers(card, idx) {
   card.addEventListener('dragstart', (e) => {
     isDraggingAlly = true;
-    draggedAllyIndex = idx;
+    draggedCard = card;
     card.classList.add('is-dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(idx));
+    e.dataTransfer.setData('text/plain', card.dataset.allyId || String(idx));
   });
 
   card.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (!draggedCard || draggedCard === card) return;
+
     const rect = card.getBoundingClientRect();
     const isAfter = (e.clientY - rect.top) > (rect.height / 2);
-    card.classList.remove('drag-over-top', 'drag-over-bottom');
-    if (isAfter) {
-      card.classList.add('drag-over-bottom');
-    } else {
-      card.classList.add('drag-over-top');
-    }
-  });
 
-  card.addEventListener('dragleave', () => {
-    card.classList.remove('drag-over-top', 'drag-over-bottom');
+    if (isAfter) {
+      if (card.nextSibling !== draggedCard) {
+        allySlotsContainer.insertBefore(draggedCard, card.nextSibling);
+        syncAlliesOrderFromDOM();
+      }
+    } else {
+      if (draggedCard.nextSibling !== card) {
+        allySlotsContainer.insertBefore(draggedCard, card);
+        syncAlliesOrderFromDOM();
+      }
+    }
   });
 
   card.addEventListener('dragend', () => {
-    card.classList.remove('is-dragging');
-    document.querySelectorAll('.slot-card').forEach(c => {
-      c.classList.remove('drag-over-top', 'drag-over-bottom', 'is-dragging');
-    });
+    if (draggedCard) {
+      draggedCard.classList.remove('is-dragging');
+    }
+    syncAlliesOrderFromDOM();
+    updateTargetBanner();
+    computeRecommendationsClientSide();
+
     setTimeout(() => {
       isDraggingAlly = false;
-      draggedAllyIndex = null;
+      draggedCard = null;
     }, 60);
   });
 
-  card.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    document.querySelectorAll('.slot-card').forEach(c => {
-      c.classList.remove('drag-over-top', 'drag-over-bottom', 'is-dragging');
-    });
-
-    const fromIndex = draggedAllyIndex !== null ? draggedAllyIndex : parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if (isNaN(fromIndex) || fromIndex === null || fromIndex < 0 || fromIndex >= state.allies.length) return;
-
-    const rect = card.getBoundingClientRect();
-    const isAfter = (e.clientY - rect.top) > (rect.height / 2);
-    let dropIndex = idx;
-    if (isAfter) dropIndex++;
-    if (fromIndex < dropIndex) dropIndex--;
-
-    if (fromIndex !== dropIndex) {
-      const activeAllyRef = (state.activeTarget.team === 'ally' && state.allies[state.activeTarget.index])
-        ? state.allies[state.activeTarget.index]
-        : null;
-
-      const [movedItem] = state.allies.splice(fromIndex, 1);
-      state.allies.splice(dropIndex, 0, movedItem);
-
-      if (activeAllyRef) {
-        const newActiveIdx = state.allies.indexOf(activeAllyRef);
-        if (newActiveIdx !== -1) {
-          state.activeTarget.index = newActiveIdx;
-        }
-      }
-
-      renderDraftSlots();
-      computeRecommendationsClientSide();
-    }
-  });
-
-  // Touch support for touchscreen devices
+  // Touch support for touchscreen devices with real-time DOM swap
   card.addEventListener('touchstart', (e) => {
     if (e.target.closest('.slot-remove-btn')) return;
     const touch = e.touches[0];
@@ -604,66 +605,43 @@ function attachAllySlotDragHandlers(card, idx) {
     if (diff > 8 && !card._touchStarted) {
       card._touchStarted = true;
       isDraggingAlly = true;
-      draggedAllyIndex = idx;
+      draggedCard = card;
       card.classList.add('is-dragging');
     }
-    if (card._touchStarted) {
+    if (card._touchStarted && draggedCard) {
       e.preventDefault();
       const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
       const targetCard = targetEl ? targetEl.closest('.slot-card.draggable-slot') : null;
-      document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('drag-over-top', 'drag-over-bottom'));
-      if (targetCard) {
+      if (targetCard && targetCard !== draggedCard && targetCard.parentElement === allySlotsContainer) {
         const rect = targetCard.getBoundingClientRect();
         const isAfter = (touch.clientY - rect.top) > (rect.height / 2);
-        targetCard.classList.add(isAfter ? 'drag-over-bottom' : 'drag-over-top');
+        if (isAfter) {
+          if (targetCard.nextSibling !== draggedCard) {
+            allySlotsContainer.insertBefore(draggedCard, targetCard.nextSibling);
+            syncAlliesOrderFromDOM();
+          }
+        } else {
+          if (draggedCard.nextSibling !== targetCard) {
+            allySlotsContainer.insertBefore(draggedCard, targetCard);
+            syncAlliesOrderFromDOM();
+          }
+        }
       }
     }
   }, { passive: false });
 
-  card.addEventListener('touchend', (e) => {
+  card.addEventListener('touchend', () => {
     if (card._touchStarted) {
-      const touch = e.changedTouches[0];
-      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-      const targetCard = targetEl ? targetEl.closest('.slot-card.draggable-slot') : null;
-      const fromIndex = draggedAllyIndex;
-
-      document.querySelectorAll('.slot-card').forEach(c => {
-        c.classList.remove('drag-over-top', 'drag-over-bottom', 'is-dragging');
-      });
-
-      if (targetCard && fromIndex !== null) {
-        const targetIdx = parseInt(targetCard.dataset.idx, 10);
-        if (!isNaN(targetIdx)) {
-          const rect = targetCard.getBoundingClientRect();
-          const isAfter = (touch.clientY - rect.top) > (rect.height / 2);
-          let dropIndex = targetIdx;
-          if (isAfter) dropIndex++;
-          if (fromIndex < dropIndex) dropIndex--;
-
-          if (fromIndex !== dropIndex) {
-            const activeAllyRef = (state.activeTarget.team === 'ally' && state.allies[state.activeTarget.index])
-              ? state.allies[state.activeTarget.index]
-              : null;
-
-            const [movedItem] = state.allies.splice(fromIndex, 1);
-            state.allies.splice(dropIndex, 0, movedItem);
-
-            if (activeAllyRef) {
-              const newActiveIdx = state.allies.indexOf(activeAllyRef);
-              if (newActiveIdx !== -1) {
-                state.activeTarget.index = newActiveIdx;
-              }
-            }
-
-            renderDraftSlots();
-            computeRecommendationsClientSide();
-          }
-        }
+      if (draggedCard) {
+        draggedCard.classList.remove('is-dragging');
       }
-
+      syncAlliesOrderFromDOM();
+      updateTargetBanner();
+      computeRecommendationsClientSide();
+      renderDraftSlots();
       setTimeout(() => {
         isDraggingAlly = false;
-        draggedAllyIndex = null;
+        draggedCard = null;
       }, 60);
     }
   });
@@ -681,6 +659,7 @@ function renderDraftSlots() {
     card.className = `slot-card draggable-slot ${isTarget ? 'active-target' : ''}`;
     card.draggable = true;
     card.dataset.idx = idx;
+    card.dataset.allyId = slot.id || slot.role.toLowerCase();
     card.innerHTML = `
       <div class="slot-drag-handle" title="Drag to reorder pick order">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -693,7 +672,7 @@ function renderDraftSlots() {
         </svg>
       </div>
       <div class="slot-avatar">
-        ${slot.icon ? `<img src="${slot.icon}" alt="${slot.name}">` : `<span>${getRoleEmoji(slot.role)}</span>`}
+        ${slot.icon ? `<img src="${slot.icon}" alt="${slot.name}">` : `<span class="slot-role-abbr">${slot.role}</span>`}
       </div>
       <div class="slot-meta">
         <div class="slot-role-row">
@@ -732,7 +711,7 @@ function renderDraftSlots() {
     card.className = `slot-card ${isTarget ? 'active-target' : ''}`;
     card.innerHTML = `
       <div class="slot-avatar">
-        ${slot.icon ? `<img src="${slot.icon}" alt="${slot.name}">` : `<span>⚔️</span>`}
+        ${slot.icon ? `<img src="${slot.icon}" alt="${slot.name}">` : `<span class="slot-role-abbr slot-enemy-abbr">#${idx + 1}</span>`}
       </div>
       <div class="slot-meta">
         <span class="slot-role-tag">Enemy #${idx + 1}</span>
@@ -1010,17 +989,6 @@ function renderRecommendations(allCandidates) {
 
     recommendationsList.appendChild(card);
   });
-}
-
-function getRoleEmoji(role) {
-  switch (role) {
-    case 'TOP': return '🛡️';
-    case 'JGL': return '🌲';
-    case 'MID': return '⚡';
-    case 'BOT': return '🏹';
-    case 'SUP': return '✨';
-    default: return '⬢';
-  }
 }
 
 // Start application
