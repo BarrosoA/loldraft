@@ -23,29 +23,33 @@ class MatrixBuilder:
     Transforms scraped champion payloads into normalized pairwise delta matrices structured by role.
     """
 
-    SMOOTHING_M = 200.0       # Empirical Bayes shrinkage constant (games)
+    SMOOTHING_M_LANE = 250.0  # Empirical Bayes shrinkage constant for direct lane counters (games)
+    SMOOTHING_M_TEAM = 500.0  # Empirical Bayes shrinkage constant for cross-map threats & ally synergies (games)
     DELTA_THRESHOLD = 0.25    # Deadband threshold: prune deltas with absolute value < 0.25%
 
     def __init__(
         self,
         output_dir: str = "data",
-        smoothing_m: float = 200.0,
+        smoothing_m_lane: float = 250.0,
+        smoothing_m_team: float = 500.0,
         delta_threshold: float = 0.25
     ):
         self.output_dir = output_dir
-        self.smoothing_m = smoothing_m
+        self.smoothing_m_lane = smoothing_m_lane
+        self.smoothing_m_team = smoothing_m_team
         self.delta_threshold = delta_threshold
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(os.path.join(self.output_dir, "patches"), exist_ok=True)
 
-    def smooth_delta(self, raw_delta: float, sample_size: int) -> float:
+    def smooth_delta(self, raw_delta: float, sample_size: int, m: Optional[float] = None) -> float:
         """
         Applies empirical Bayes shrinkage towards zero:
         Smoothed = (Raw_Delta * N) / (N + M)
         """
         if sample_size <= 0:
             return 0.0
-        return round((raw_delta * sample_size) / (sample_size + self.smoothing_m), 2)
+        smoothing_m = m if m is not None else self.smoothing_m_lane
+        return round((raw_delta * sample_size) / (sample_size + smoothing_m), 2)
 
     def build_matrix_from_scraped_data(
         self,
@@ -66,7 +70,9 @@ class MatrixBuilder:
             "patch": patch,
             "tier": tier,
             "avg_tier_wr": avg_tier_wr,
-            "smoothing_m": self.smoothing_m,
+            "smoothing_m_lane": self.smoothing_m_lane,
+            "smoothing_m_team": self.smoothing_m_team,
+            "smoothing_m": self.smoothing_m_lane,
             "delta_threshold": self.delta_threshold,
             "weights": {
                 "base": 1.0,
@@ -133,9 +139,9 @@ class MatrixBuilder:
                         sample_size = int(row[5])
 
                         raw_delta = matchup_wr - baseline_wr
-                        smoothed = self.smooth_delta(raw_delta, sample_size)
 
                         if enemy_role == role_name:
+                            smoothed = self.smooth_delta(raw_delta, sample_size, self.smoothing_m_lane)
                             if smoothed < 0:
                                 negative_lane_deltas.append(abs(smoothed))
                             if abs(smoothed) >= self.delta_threshold:
@@ -144,6 +150,7 @@ class MatrixBuilder:
                             else:
                                 total_entries_pruned += 1
                         else:
+                            smoothed = self.smooth_delta(raw_delta, sample_size, self.smoothing_m_team)
                             if abs(smoothed) >= self.delta_threshold:
                                 threats[enemy_cid] = smoothed
                                 total_entries_stored += 1
@@ -168,7 +175,7 @@ class MatrixBuilder:
                         sample_size = int(row[5])
 
                         raw_synergy_delta = pair_wr - baseline_wr
-                        smoothed_synergy = self.smooth_delta(raw_synergy_delta, sample_size)
+                        smoothed_synergy = self.smooth_delta(raw_synergy_delta, sample_size, self.smoothing_m_team)
 
                         if abs(smoothed_synergy) >= self.delta_threshold:
                             synergies[ally_cid] = smoothed_synergy
@@ -217,12 +224,18 @@ def main():
     parser = argparse.ArgumentParser(description="LolDraft Matrix Builder CLI")
     parser.add_argument("--cache-dir", type=str, default="data/cache", help="Path to cache directory")
     parser.add_argument("--patch", type=str, default=None, help="Target patch to compile from cache")
+    parser.add_argument("--m-lane", type=float, default=250.0, help="Empirical Bayes constant for lane counters (default: 250.0)")
+    parser.add_argument("--m-team", type=float, default=500.0, help="Empirical Bayes constant for team threats & synergies (default: 500.0)")
     parser.add_argument("--threshold", type=float, default=0.25, help="Pruning deadband threshold in % (default: 0.25)")
     parser.add_argument("--out", type=str, default="current_matrix.json", help="Output JSON filename")
 
     args = parser.parse_args()
 
-    builder = MatrixBuilder(delta_threshold=args.threshold)
+    builder = MatrixBuilder(
+        smoothing_m_lane=args.m_lane,
+        smoothing_m_team=args.m_team,
+        delta_threshold=args.threshold
+    )
 
     # Discover available cached patch
     patch_dir = os.path.join(args.cache_dir, args.patch) if args.patch else None

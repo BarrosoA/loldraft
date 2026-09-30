@@ -84,9 +84,12 @@ For all ~168 champions and 5 standard roles (Top, Jungle, Mid, Bot, Support), fo
    V_blind(c, r) = Average negative Delta_Lane against the top 5 most common counter-picks to c.
 
 ### 3.3. Statistical Smoothing (Empirical Bayes Shrinkage)
-To prevent low-sample anomalies (e.g., an off-meta pick with 3 wins out of 4 games showing a +25% delta), all deltas are shrunk towards zero using empirical Bayes smoothing:
+To prevent low-sample anomalies (e.g., an off-meta matchup with 3 wins out of 4 games showing a +25% delta), all deltas are shrunk towards zero using empirical Bayes smoothing:
    Smoothed_Delta = (Raw_Delta * Sample_Size) / (Sample_Size + M)
-Where M is the smoothing constant (default: M = 200 games). When sample size is small, Smoothed_Delta approaches 0.0 (neutral impact).
+Where M is the feature-calibrated pseudo-count threshold:
+* `M_lane = 250` games: Calibrated for high-variance direct 1v1 lane counter matchups (`tau = 2.43%`).
+* `M_team = 500` games: Calibrated for lower-variance 5v5 team interactions (`tau = 1.84%–1.97%`), applied to cross-map threats and ally synergies.
+When sample size is small, `Smoothed_Delta` approaches 0.0 (neutral impact). Deltas with `|Smoothed_Delta| < 0.25%` are pruned as noise.
 
 ### 3.4. Weight Calibration (Logistic Regression)
 Rather than guessing arbitrary weights, a Ridge Logistic Regression model is trained once per patch across 50,000 matches:
