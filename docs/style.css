@@ -666,13 +666,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
-.hud-title-wrap {
+.hud-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+}
+
+.hud-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.hud-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
 }
 
 .hud-indicator {
@@ -681,6 +701,7 @@ body {
   border-radius: 50%;
   background: var(--gold-primary);
   box-shadow: 0 0 10px var(--gold-glow);
+  transition: all 0.25s ease;
 }
 
 .hud-title {
@@ -689,65 +710,105 @@ body {
   font-weight: 800;
   letter-spacing: 0.5px;
   color: var(--gold-light);
-}
-
-.hud-title.title-worst {
-  color: #ff7588;
-}
-
-.hud-indicator.indicator-worst {
-  background: var(--red-team);
-  box-shadow: 0 0 10px var(--red-team-glow);
-}
-
-.hud-tabs {
-  display: flex;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 3px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 0 4px;
-}
-
-.hud-tab {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.hud-tab:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.hud-tab.active[data-tab="best"] {
-  background: rgba(200, 155, 60, 0.15);
-  border-color: var(--gold-primary);
-  color: var(--gold-light);
-  box-shadow: 0 0 10px rgba(200, 155, 60, 0.2);
-}
-
-.hud-tab.active[data-tab="worst"] {
-  background: rgba(232, 64, 87, 0.18);
-  border-color: var(--red-team);
-  color: #ff7588;
-  box-shadow: 0 0 10px rgba(232, 64, 87, 0.25);
+  transition: color 0.25s ease;
 }
 
 .hud-meta {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+/* Modern Segmented Pill Control */
+.segmented-control {
+  display: inline-flex;
+  background: rgba(11, 15, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3px;
+  gap: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.seg-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.seg-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.seg-btn:hover .seg-icon {
+  transform: scale(1.15);
+}
+
+/* Active State: Best */
+.seg-btn.active[data-tab="best"] {
+  background: linear-gradient(135deg, rgba(200, 155, 60, 0.22), rgba(200, 155, 60, 0.08));
+  color: var(--gold-light);
+  border-color: var(--gold-primary);
+  box-shadow: 0 2px 10px rgba(200, 155, 60, 0.25);
+}
+
+/* Active State: Worst */
+.seg-btn.active[data-tab="worst"] {
+  background: linear-gradient(135deg, rgba(232, 64, 87, 0.22), rgba(232, 64, 87, 0.08));
+  color: #ff7588;
+  border-color: var(--red-team);
+  box-shadow: 0 2px 10px rgba(232, 64, 87, 0.3);
+}
+
+.seg-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.seg-badge-best {
+  background: rgba(200, 155, 60, 0.2);
+  color: var(--gold-primary);
+}
+
+.seg-badge-worst {
+  background: rgba(232, 64, 87, 0.2);
+  color: #ff6b7d;
+}
+
+/* Data-View Dynamic HUD Styling */
+.hud-panel[data-view="worst"] .hud-indicator {
+  background: var(--red-team);
+  box-shadow: 0 0 10px var(--red-team-glow);
+}
+
+.hud-panel[data-view="worst"] .hud-title {
+  color: #ff7588;
+}
+
+.hud-panel[data-view="worst"] {
+  border-top-color: rgba(232, 64, 87, 0.25);
 }
 
 .hud-legend {

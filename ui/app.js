@@ -31,7 +31,8 @@ const state = {
   ],
   activeTarget: { team: 'ally', index: 0 },
   searchFilter: '',
-  roleFilter: 'all'
+  roleFilter: 'all',
+  hudView: 'best'
 };
 
 // DOM Elements
@@ -465,28 +466,42 @@ function setupEventListeners() {
     computeRecommendationsClientSide();
   });
 
-  // Best / Worst recommendation tabs
-  if (tabBest && tabWorst) {
-    tabBest.addEventListener('click', () => {
-      activeHudTab = 'best';
-      tabBest.classList.add('active');
-      tabWorst.classList.remove('active');
-      if (hudIndicator) hudIndicator.classList.remove('indicator-worst');
-      if (hudTitleHeading) hudTitleHeading.classList.remove('title-worst');
-      if (hudTitlePrefix) hudTitlePrefix.textContent = 'Suggested Picks';
-      renderRecommendations(currentScoredCandidates);
-    });
-
-    tabWorst.addEventListener('click', () => {
-      activeHudTab = 'worst';
-      tabWorst.classList.add('active');
-      tabBest.classList.remove('active');
-      if (hudIndicator) hudIndicator.classList.add('indicator-worst');
-      if (hudTitleHeading) hudTitleHeading.classList.add('title-worst');
-      if (hudTitlePrefix) hudTitlePrefix.textContent = 'Picks to Avoid';
-      renderRecommendations(currentScoredCandidates);
+  // Modern Segmented Tab Control (Best / Worst Picks)
+  const segControl = document.getElementById('hudSegmentedControl');
+  if (segControl) {
+    segControl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      const view = btn.dataset.tab;
+      if (view) setHudView(view);
     });
   }
+}
+
+function setHudView(view) {
+  state.hudView = view;
+
+  // 1. Update tab button active and ARIA states
+  document.querySelectorAll('.seg-btn').forEach(btn => {
+    const isSelected = btn.dataset.tab === view;
+    btn.classList.toggle('active', isSelected);
+    btn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+  });
+
+  // 2. Update panel theme attribute
+  const hudPanel = document.getElementById('hudPanel');
+  if (hudPanel) {
+    hudPanel.setAttribute('data-view', view);
+  }
+
+  // 3. Update title prefix text
+  const hudTitlePrefix = document.getElementById('hudTitlePrefix');
+  if (hudTitlePrefix) {
+    hudTitlePrefix.textContent = view === 'worst' ? 'Picks to Avoid' : 'Suggested Picks';
+  }
+
+  // 4. Render recommendations
+  renderRecommendations(currentScoredCandidates);
 }
 
 let draggedAllyIndex = null;
@@ -920,7 +935,7 @@ function renderRecommendations(allCandidates) {
     return;
   }
 
-  const isWorst = activeHudTab === 'worst';
+  const isWorst = (state.hudView || 'best') === 'worst';
   const recs = isWorst 
     ? allCandidates.slice(-10).reverse() 
     : allCandidates.slice(0, 10);
@@ -932,6 +947,8 @@ function renderRecommendations(allCandidates) {
       ? `rec-card worst-pick ${isTopOne ? 'worst-rank-1' : ''}`
       : `rec-card ${isTopOne ? 'rank-1' : ''}`;
     card.className = cardClass;
+    card.title = `Click to assign ${item.name} to active draft slot`;
+    card.style.cursor = 'pointer';
 
     const rankLabel = isWorst ? `#${index + 1} AVOID` : `#${index + 1}`;
     const rankClass = isWorst ? `rec-rank-tag worst-rank` : `rec-rank-tag`;
@@ -969,6 +986,13 @@ function renderRecommendations(allCandidates) {
         ${badgesHtml}
       </div>
     `;
+
+    card.addEventListener('click', () => {
+      const champ = catalog.find(c => String(c.cid) === String(item.cid));
+      if (champ) {
+        assignChampion(champ);
+      }
+    });
 
     recommendationsList.appendChild(card);
   });
