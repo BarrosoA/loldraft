@@ -400,7 +400,6 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
 
 async function init() {
   setupEventListeners();
-  hudCandidateMeta.textContent = 'Loading 4 MB matrix into browser RAM...';
 
   try {
     // 1. Load standalone matrix file (works on GitHub Pages & Vercel)
@@ -436,7 +435,6 @@ async function init() {
     computeRecommendationsClientSide();
   } catch (err) {
     console.error('Failed to load matrix:', err);
-    hudCandidateMeta.textContent = 'Error loading matrix data.';
   }
 }
 
