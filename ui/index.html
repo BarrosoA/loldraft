@@ -139,8 +139,16 @@
     <section class="hud-panel">
       <div class="hud-header">
         <div class="hud-title-wrap">
-          <span class="hud-indicator"></span>
-          <h2 class="hud-title">Suggested Picks - <span id="hudRoleLabel">TOP</span></h2>
+          <span class="hud-indicator" id="hudIndicator"></span>
+          <h2 class="hud-title" id="hudTitleHeading"><span id="hudTitlePrefix">Suggested Picks</span> - <span id="hudRoleLabel">TOP</span></h2>
+          <div class="hud-tabs" id="hudTabs">
+            <button class="hud-tab active" data-tab="best" id="tabBest">
+              <span>⭐</span> Best Picks
+            </button>
+            <button class="hud-tab" data-tab="worst" id="tabWorst">
+              <span>⚠️</span> Worst Picks
+            </button>
+          </div>
           <span class="hud-meta" id="hudCandidateMeta">Calculating across 173 champions</span>
         </div>
         <div class="hud-legend">

@@ -55,6 +55,37 @@ const magicPctLabel = document.getElementById('magicPctLabel');
 const damageSummaryText = document.getElementById('damageSummaryText');
 const resetBtn = document.getElementById('resetBtn');
 const patchBadge = document.getElementById('patchBadge');
+const tabBest = document.getElementById('tabBest');
+const tabWorst = document.getElementById('tabWorst');
+const hudIndicator = document.getElementById('hudIndicator');
+const hudTitlePrefix = document.getElementById('hudTitlePrefix');
+const hudTitleHeading = document.getElementById('hudTitleHeading');
+
+let currentScoredCandidates = [];
+let activeHudTab = 'best'; // 'best' | 'worst'
+
+// Recognized Armor-scaling / Heavy Vanguard Tank Champions
+const ARMOR_STACKING_CHAMPIONS = new Set([
+  '54', '33', '897', '78', '44', '516', '14', '89', '111', '98', '31', '154', '113', '57', '223', '201', '12'
+]);
+
+const MR_STACKING_CHAMPIONS = new Set([
+  '38', '3', '27', '516', '57', '32', '86'
+]);
+
+const ROLE_AP_PRIORS = {
+  'MID': 0.68,
+  'JGL': 0.28,
+  'TOP': 0.24,
+  'BOT': 0.05
+};
+
+const ROLE_AD_PRIORS = {
+  'MID': 0.32,
+  'JGL': 0.72,
+  'TOP': 0.76,
+  'BOT': 0.95
+};
 
 // ============================================================================
 // Bayesian Role Inference & Scoring in Client-Side JavaScript
@@ -176,6 +207,7 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     totalSynergyDelta += synergies[aCid] || 0.0;
   }
 
+  // Compositional Guardrails: Enemy-Aware Damage Vulnerability
   let compAdjustment = 0.0;
   const rationale = [];
   let projectedPhys = candDmg.pct_physical || 50.0;
@@ -187,27 +219,102 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     projectedPhys = allDmgList.reduce((s, d) => s + (d.pct_physical || 0), 0) / allDmgList.length;
     projectedMagic = allDmgList.reduce((s, d) => s + (d.pct_magic || 0), 0) / allDmgList.length;
 
-    const existingPhys = alliesDmg.reduce((s, d) => s + (d.pct_physical || 0), 0) / alliesDmg.length;
-    const existingMagic = alliesDmg.reduce((s, d) => s + (d.pct_magic || 0), 0) / alliesDmg.length;
+    const lockedCoreAllies = state.allies.filter(a => a.cid && a.role !== 'SUP');
+    const openCoreRoles = state.allies.filter(a => !a.cid && a.role !== 'SUP').map(a => a.role);
 
-    if (lockedAllies.length >= 2) {
-      if (existingPhys >= 75.0) {
-        if ((candDmg.pct_physical || 0) >= 65.0) {
-          compAdjustment -= 3.0;
-          rationale.push("Composition Penalty: Heavy Physical redundancy (-3.00%). Enemy team can easily stack Armor.");
-        } else if ((candDmg.pct_magic || 0) >= 60.0) {
-          compAdjustment += 2.5;
-          rationale.push("Composition Bonus: Critical AP diversification (+2.50%). Prevents enemy Armor stacking.");
+    const hasLockedApCarry = lockedCoreAllies.some(a => {
+      const p = getChampionDamageProfile(a.cid, null);
+      return (p.pct_magic || 0) >= 50.0;
+    });
+
+    const hasLockedAdCarry = lockedCoreAllies.some(a => {
+      const p = getChampionDamageProfile(a.cid, null);
+      return (p.pct_physical || 0) >= 50.0;
+    });
+
+    let enemyArmorFactor = 0.6;
+    const armorStackerNames = [];
+    for (const eCid of lockedEnemies) {
+      if (ARMOR_STACKING_CHAMPIONS.has(String(eCid))) {
+        enemyArmorFactor += 0.45;
+        const eName = MATRIX.champions[eCid]?.name;
+        if (eName) armorStackerNames.push(eName);
+      }
+    }
+    enemyArmorFactor = Math.min(enemyArmorFactor, 1.8);
+
+    let enemyMrFactor = 0.6;
+    const mrStackerNames = [];
+    for (const eCid of lockedEnemies) {
+      if (MR_STACKING_CHAMPIONS.has(String(eCid))) {
+        enemyMrFactor += 0.45;
+        const eName = MATRIX.champions[eCid]?.name;
+        if (eName) mrStackerNames.push(eName);
+      }
+    }
+    enemyMrFactor = Math.min(enemyMrFactor, 1.8);
+
+    const candIsAd = (candDmg.pct_physical || 0) >= 65.0;
+    const candIsAp = (candDmg.pct_magic || 0) >= 55.0;
+
+    // Physical Skew Evaluation
+    if (!hasLockedApCarry && !candIsAp) {
+      const targetRoleKey = targetRole === 'middle' ? 'MID' : (targetRole === 'jungle' ? 'JGL' : (targetRole === 'bottom' ? 'BOT' : (targetRole === 'top' ? 'TOP' : '')));
+      const remainingOpenRoles = openCoreRoles.filter(r => r !== targetRoleKey);
+
+      let pZeroApRisk = 1.0;
+      if (remainingOpenRoles.length > 0) {
+        for (const r of remainingOpenRoles) {
+          pZeroApRisk *= (1.0 - (ROLE_AP_PRIORS[r] || 0.25));
         }
-      } else if (existingMagic >= 75.0) {
-        if ((candDmg.pct_magic || 0) >= 65.0) {
-          compAdjustment -= 3.0;
-          rationale.push("Composition Penalty: Heavy Magic redundancy (-3.00%). Enemy team can easily stack Magic Resist.");
-        } else if ((candDmg.pct_physical || 0) >= 60.0) {
-          compAdjustment += 2.5;
-          rationale.push("Composition Bonus: Critical AD diversification (+2.50%). Prevents enemy Magic Resist stacking.");
+      } else {
+        pZeroApRisk = 1.0;
+      }
+
+      if (pZeroApRisk >= 0.20 && lockedCoreAllies.length >= 1) {
+        const penalty = Math.min(4.5, pZeroApRisk * enemyArmorFactor * 3.6);
+        compAdjustment -= penalty;
+        if (pZeroApRisk >= 0.85) {
+          const stackerInfo = armorStackerNames.length > 0 ? ` into ${armorStackerNames.join(', ')}` : '';
+          rationale.push(`Draft Trap: Seals Full AD (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure Armor.`);
+        } else {
+          rationale.push(`Damage Warning: Heavy AD compounding (-${penalty.toFixed(2)}%). Missing primary AP anchor.`);
         }
       }
+    } else if (!hasLockedApCarry && candIsAp && lockedCoreAllies.length >= 2) {
+      const bonus = Math.min(3.5, enemyArmorFactor * 2.5);
+      compAdjustment += bonus;
+      rationale.push(`Composition Anchor: Crucial AP carry (+${bonus.toFixed(2)}%). Prevents enemy Armor stacking.`);
+    }
+
+    // Magic Skew Evaluation
+    if (!hasLockedAdCarry && !candIsAd) {
+      const targetRoleKey = targetRole === 'middle' ? 'MID' : (targetRole === 'jungle' ? 'JGL' : (targetRole === 'bottom' ? 'BOT' : (targetRole === 'top' ? 'TOP' : '')));
+      const remainingOpenRoles = openCoreRoles.filter(r => r !== targetRoleKey);
+
+      let pZeroAdRisk = 1.0;
+      if (remainingOpenRoles.length > 0) {
+        for (const r of remainingOpenRoles) {
+          pZeroAdRisk *= (1.0 - (ROLE_AD_PRIORS[r] || 0.70));
+        }
+      } else {
+        pZeroAdRisk = 1.0;
+      }
+
+      if (pZeroAdRisk >= 0.20 && lockedCoreAllies.length >= 1) {
+        const penalty = Math.min(4.5, pZeroAdRisk * enemyMrFactor * 3.6);
+        compAdjustment -= penalty;
+        if (pZeroAdRisk >= 0.85) {
+          const stackerInfo = mrStackerNames.length > 0 ? ` into ${mrStackerNames.join(', ')}` : '';
+          rationale.push(`Draft Trap: Seals Full AP (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure MR.`);
+        } else {
+          rationale.push(`Damage Warning: Heavy AP compounding (-${penalty.toFixed(2)}%).`);
+        }
+      }
+    } else if (!hasLockedAdCarry && candIsAd && lockedCoreAllies.length >= 2) {
+      const bonus = Math.min(3.5, enemyMrFactor * 2.5);
+      compAdjustment += bonus;
+      rationale.push(`Composition Anchor: Crucial AD carry (+${bonus.toFixed(2)}%). Prevents enemy Magic Resist stacking.`);
     }
   }
 
@@ -357,6 +464,29 @@ function setupEventListeners() {
     renderChampionGrid();
     computeRecommendationsClientSide();
   });
+
+  // Best / Worst recommendation tabs
+  if (tabBest && tabWorst) {
+    tabBest.addEventListener('click', () => {
+      activeHudTab = 'best';
+      tabBest.classList.add('active');
+      tabWorst.classList.remove('active');
+      if (hudIndicator) hudIndicator.classList.remove('indicator-worst');
+      if (hudTitleHeading) hudTitleHeading.classList.remove('title-worst');
+      if (hudTitlePrefix) hudTitlePrefix.textContent = 'Suggested Picks';
+      renderRecommendations(currentScoredCandidates);
+    });
+
+    tabWorst.addEventListener('click', () => {
+      activeHudTab = 'worst';
+      tabWorst.classList.add('active');
+      tabBest.classList.remove('active');
+      if (hudIndicator) hudIndicator.classList.add('indicator-worst');
+      if (hudTitleHeading) hudTitleHeading.classList.add('title-worst');
+      if (hudTitlePrefix) hudTitlePrefix.textContent = 'Picks to Avoid';
+      renderRecommendations(currentScoredCandidates);
+    });
+  }
 }
 
 let draggedAllyIndex = null;
@@ -777,20 +907,34 @@ function computeRecommendationsClientSide() {
   }
 
   // 4. Render HUD cards
-  renderRecommendations(candidates.slice(0, 10));
+  currentScoredCandidates = candidates;
+  renderRecommendations(currentScoredCandidates);
 }
 
 // Render Recommendation HUD Cards
-function renderRecommendations(recs) {
+function renderRecommendations(allCandidates) {
   recommendationsList.innerHTML = '';
-  if (recs.length === 0) {
-    recommendationsList.innerHTML = `<div style="padding: 14px; color: var(--text-dim); font-size: 13px;">No viable champions found for ${assignedRole.toUpperCase()}.</div>`;
+  if (!allCandidates || allCandidates.length === 0) {
+    recommendationsList.innerHTML = `<div style="padding: 14px; color: var(--text-dim); font-size: 13px;">No viable champions found for ${ROLE_NAMES[assignedRole] || assignedRole.toUpperCase()}.</div>`;
     return;
   }
 
+  const isWorst = activeHudTab === 'worst';
+  const recs = isWorst 
+    ? allCandidates.slice(-10).reverse() 
+    : allCandidates.slice(0, 10);
+
   recs.forEach((item, index) => {
     const card = document.createElement('div');
-    card.className = `rec-card ${index === 0 ? 'rank-1' : ''}`;
+    const isTopOne = index === 0;
+    const cardClass = isWorst 
+      ? `rec-card worst-pick ${isTopOne ? 'worst-rank-1' : ''}`
+      : `rec-card ${isTopOne ? 'rank-1' : ''}`;
+    card.className = cardClass;
+
+    const rankLabel = isWorst ? `#${index + 1} AVOID` : `#${index + 1}`;
+    const rankClass = isWorst ? `rec-rank-tag worst-rank` : `rec-rank-tag`;
+    const scoreClass = isWorst ? `rec-score-value worst-score` : `rec-score-value`;
 
     const laneDeltaClass = item.expected_lane_delta >= 0 ? 'delta-pos' : 'delta-neg';
     const laneDeltaSign = item.expected_lane_delta >= 0 ? '+' : '';
@@ -798,19 +942,19 @@ function renderRecommendations(recs) {
     const synDeltaSign = item.synergy_delta >= 0 ? '+' : '';
 
     const badgesHtml = (item.rationale || []).map(r => {
-      const isWarn = r.toLowerCase().includes('risky') || r.toLowerCase().includes('penalty') || r.toLowerCase().includes('negative');
+      const isWarn = r.toLowerCase().includes('risky') || r.toLowerCase().includes('penalty') || r.toLowerCase().includes('negative') || r.toLowerCase().includes('trap') || r.toLowerCase().includes('warning') || r.toLowerCase().includes('unfavorable');
       return `<span class="rec-badge ${isWarn ? 'badge-warn' : 'badge-good'}">${r}</span>`;
     }).join('');
 
     card.innerHTML = `
       <div class="rec-card-top">
-        <span class="rec-rank-tag">#${index + 1}</span>
+        <span class="${rankClass}">${rankLabel}</span>
         <div class="rec-avatar">
           <img src="${item.icon}" alt="${item.name}" loading="lazy">
         </div>
         <div class="rec-champ-info">
           <span class="rec-champ-name">${item.name}</span>
-          <span class="rec-score-value">${item.composite_score}%</span>
+          <span class="${scoreClass}">${item.composite_score}%</span>
         </div>
       </div>
 

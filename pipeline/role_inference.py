@@ -10,6 +10,29 @@ from typing import Dict, List, Any, Optional
 
 ALL_ROLES = ["top", "jungle", "middle", "bottom", "support"]
 
+# Recognized Armor-scaling / Heavy Vanguard Tank Champions
+ARMOR_STACKING_CHAMPIONS = {
+    '54', '33', '897', '78', '44', '516', '14', '89', '111', '98', '31', '154', '113', '57', '223', '201', '12'
+}
+
+MR_STACKING_CHAMPIONS = {
+    '38', '3', '27', '516', '57', '32', '86'
+}
+
+ROLE_AP_PRIORS = {
+    'middle': 0.68,
+    'jungle': 0.28,
+    'top': 0.24,
+    'bottom': 0.05
+}
+
+ROLE_AD_PRIORS = {
+    'middle': 0.32,
+    'jungle': 0.72,
+    'top': 0.76,
+    'bottom': 0.95
+}
+
 class RoleInferenceEngine:
     """
     Computes exact marginal role probabilities P(enemy_i = role_r) across locked enemy champions.
@@ -111,7 +134,8 @@ class DraftScorer:
         candidate_cid: str,
         assigned_role: str,
         locked_allies: List[str],
-        locked_enemies: List[str]
+        locked_enemies: List[str],
+        ally_roles: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """
         Computes composite draft score, explainable rationale, and damage balance for a candidate pick.
@@ -120,6 +144,13 @@ class DraftScorer:
         cand = champions.get(str(candidate_cid))
         if not cand:
             return {"error": f"Unknown champion ID {candidate_cid}"}
+
+        if ally_roles is None:
+            ally_roles = {}
+            for a_cid in locked_allies:
+                priors = champions.get(str(a_cid), {}).get("role_priors", {})
+                if priors:
+                    ally_roles[str(a_cid)] = max(priors.items(), key=lambda x: x[1])[0]
 
         cand_name = cand.get("name", "Unknown")
         roles = cand.get("roles", {})
@@ -185,7 +216,7 @@ class DraftScorer:
                 "delta": syn_delta
             })
 
-        # Step 4: Compositional Guardrails (Damage profile balance)
+        # Step 4: Compositional Guardrails (Enemy-Aware Damage Vulnerability)
         comp_adjustment = 0.0
         rationale = []
         projected_phys = cand_dmg.get("pct_physical", 50.0)
@@ -197,28 +228,80 @@ class DraftScorer:
             projected_phys = sum(d["pct_physical"] for d in all_dmg_list) / len(all_dmg_list)
             projected_magic = sum(d["pct_magic"] for d in all_dmg_list) / len(all_dmg_list)
 
-            # Check if existing allies already heavily skew towards one damage type
-            existing_phys = sum(d["pct_physical"] for d in allies_dmg) / len(allies_dmg)
-            existing_magic = sum(d["pct_magic"] for d in allies_dmg) / len(allies_dmg)
+            # Determine core carry roles locked vs open
+            ally_roles_map = ally_roles or {}
+            locked_core_roles = [ally_roles_map.get(str(a_cid)) for a_cid in locked_allies if ally_roles_map.get(str(a_cid)) in ROLE_AP_PRIORS]
+            open_core_roles = [r for r in ROLE_AP_PRIORS.keys() if r not in locked_core_roles and r != assigned_role]
 
-            if len(locked_allies) >= 2:
-                # Heavy Physical Damage Warning (>= 75% physical among locked allies)
-                if existing_phys >= 75.0:
-                    if cand_dmg.get("pct_physical", 0) >= 65.0:
-                        comp_adjustment -= 3.0
-                        rationale.append("Composition Penalty: Heavy Physical redundancy (-3.00%). Enemy team can easily stack Armor.")
-                    elif cand_dmg.get("pct_magic", 0) >= 60.0:
-                        comp_adjustment += 2.5
-                        rationale.append("Composition Bonus: Critical AP diversification (+2.50%). Prevents enemy Armor stacking.")
+            has_locked_ap_carry = any((d.get("pct_magic", 0) >= 50.0) for d in allies_dmg)
+            has_locked_ad_carry = any((d.get("pct_physical", 0) >= 50.0) for d in allies_dmg)
 
-                # Heavy Magic Damage Warning (>= 75% magic among locked allies)
-                elif existing_magic >= 75.0:
-                    if cand_dmg.get("pct_magic", 0) >= 65.0:
-                        comp_adjustment -= 3.0
-                        rationale.append("Composition Penalty: Heavy Magic redundancy (-3.00%). Enemy team can easily stack Magic Resist.")
-                    elif cand_dmg.get("pct_physical", 0) >= 60.0:
-                        comp_adjustment += 2.5
-                        rationale.append("Composition Bonus: Critical AD diversification (+2.50%). Prevents enemy Magic Resist stacking.")
+            enemy_armor_factor = 0.6
+            armor_stacker_names = []
+            for e_cid in locked_enemies:
+                if str(e_cid) in ARMOR_STACKING_CHAMPIONS:
+                    enemy_armor_factor += 0.45
+                    e_name = champions.get(str(e_cid), {}).get("name")
+                    if e_name:
+                        armor_stacker_names.append(e_name)
+            enemy_armor_factor = min(enemy_armor_factor, 1.8)
+
+            enemy_mr_factor = 0.6
+            mr_stacker_names = []
+            for e_cid in locked_enemies:
+                if str(e_cid) in MR_STACKING_CHAMPIONS:
+                    enemy_mr_factor += 0.45
+                    e_name = champions.get(str(e_cid), {}).get("name")
+                    if e_name:
+                        mr_stacker_names.append(e_name)
+            enemy_mr_factor = min(enemy_mr_factor, 1.8)
+
+            cand_is_ad = cand_dmg.get("pct_physical", 0) >= 65.0
+            cand_is_ap = cand_dmg.get("pct_magic", 0) >= 55.0
+
+            # Physical Skew Evaluation
+            if not has_locked_ap_carry and not cand_is_ap:
+                p_zero_ap_risk = 1.0
+                if open_core_roles:
+                    for r in open_core_roles:
+                        p_zero_ap_risk *= (1.0 - ROLE_AP_PRIORS.get(r, 0.25))
+                else:
+                    p_zero_ap_risk = 1.0
+
+                if p_zero_ap_risk >= 0.20 and len(locked_allies) >= 1:
+                    penalty = min(4.5, p_zero_ap_risk * enemy_armor_factor * 3.6)
+                    comp_adjustment -= penalty
+                    if p_zero_ap_risk >= 0.85:
+                        stacker_info = f" into {', '.join(armor_stacker_names)}" if armor_stacker_names else ""
+                        rationale.append(f"Draft Trap: Seals Full AD (-{penalty:.2f}%){stacker_info}. Enemy can build pure Armor.")
+                    else:
+                        rationale.append(f"Damage Warning: Heavy AD compounding (-{penalty:.2f}%). Missing primary AP anchor.")
+            elif not has_locked_ap_carry and cand_is_ap and len(locked_allies) >= 2:
+                bonus = min(3.5, enemy_armor_factor * 2.5)
+                comp_adjustment += bonus
+                rationale.append(f"Composition Anchor: Crucial AP carry (+{bonus:.2f}%). Prevents enemy Armor stacking.")
+
+            # Magic Skew Evaluation
+            if not has_locked_ad_carry and not cand_is_ad:
+                p_zero_ad_risk = 1.0
+                if open_core_roles:
+                    for r in open_core_roles:
+                        p_zero_ad_risk *= (1.0 - ROLE_AD_PRIORS.get(r, 0.70))
+                else:
+                    p_zero_ad_risk = 1.0
+
+                if p_zero_ad_risk >= 0.20 and len(locked_allies) >= 1:
+                    penalty = min(4.5, p_zero_ad_risk * enemy_mr_factor * 3.6)
+                    comp_adjustment -= penalty
+                    if p_zero_ad_risk >= 0.85:
+                        stacker_info = f" into {', '.join(mr_stacker_names)}" if mr_stacker_names else ""
+                        rationale.append(f"Draft Trap: Seals Full AP (-{penalty:.2f}%){stacker_info}. Enemy can build pure MR.")
+                    else:
+                        rationale.append(f"Damage Warning: Heavy AP compounding (-{penalty:.2f}%).")
+            elif not has_locked_ad_carry and cand_is_ad and len(locked_allies) >= 2:
+                bonus = min(3.5, enemy_mr_factor * 2.5)
+                comp_adjustment += bonus
+                rationale.append(f"Composition Anchor: Crucial AD carry (+{bonus:.2f}%). Prevents enemy Magic Resist stacking.")
 
         # Step 5: Turn Context Scoring (Blind pick vs Revealed counter)
         is_blind = total_lane_prob < 0.25

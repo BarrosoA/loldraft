@@ -706,6 +706,60 @@ body {
   color: var(--gold-light);
 }
 
+.hud-title.title-worst {
+  color: #ff7588;
+}
+
+.hud-indicator.indicator-worst {
+  background: var(--red-team);
+  box-shadow: 0 0 10px var(--red-team-glow);
+}
+
+.hud-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 0 4px;
+}
+
+.hud-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hud-tab.active[data-tab="best"] {
+  background: rgba(200, 155, 60, 0.15);
+  border-color: var(--gold-primary);
+  color: var(--gold-light);
+  box-shadow: 0 0 10px rgba(200, 155, 60, 0.2);
+}
+
+.hud-tab.active[data-tab="worst"] {
+  background: rgba(232, 64, 87, 0.18);
+  border-color: var(--red-team);
+  color: #ff7588;
+  box-shadow: 0 0 10px rgba(232, 64, 87, 0.25);
+}
+
 .hud-meta {
   font-size: 11px;
   color: var(--text-dim);
@@ -756,6 +810,21 @@ body {
   background: linear-gradient(135deg, rgba(200, 155, 60, 0.12), rgba(7, 10, 18, 0.8));
 }
 
+.rec-card.worst-pick {
+  border-color: rgba(232, 64, 87, 0.25);
+  background: linear-gradient(135deg, rgba(232, 64, 87, 0.08), rgba(7, 10, 18, 0.85));
+}
+
+.rec-card.worst-pick:hover {
+  border-color: var(--red-team);
+  box-shadow: 0 4px 16px rgba(232, 64, 87, 0.3);
+}
+
+.rec-card.worst-rank-1 {
+  border-color: var(--red-team);
+  background: linear-gradient(135deg, rgba(232, 64, 87, 0.18), rgba(7, 10, 18, 0.9));
+}
+
 .rec-card-top {
   display: flex;
   align-items: center;
@@ -771,6 +840,12 @@ body {
   background: rgba(200, 155, 60, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.rec-rank-tag.worst-rank {
+  color: #ff7588;
+  background: rgba(232, 64, 87, 0.2);
+  border: 1px solid rgba(232, 64, 87, 0.35);
 }
 
 .rec-avatar {
