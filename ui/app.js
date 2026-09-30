@@ -1,7 +1,28 @@
 // LolDraft Interactive Simulator Client (Standalone Client-Side Engine)
 let MATRIX = null;
 let catalog = [];
-let assignedRole = 'top';
+const ROLE_TO_KEY = {
+  'TOP': 'top',
+  'JGL': 'jungle',
+  'MID': 'middle',
+  'BOT': 'bottom',
+  'SUP': 'support',
+  'top': 'top',
+  'jungle': 'jungle',
+  'middle': 'middle',
+  'bottom': 'bottom',
+  'support': 'support'
+};
+
+function getActiveAllyRole() {
+  if (state.activeTarget.team === 'ally' && state.allies[state.activeTarget.index]) {
+    const rawRole = state.allies[state.activeTarget.index].role;
+    return ROLE_TO_KEY[rawRole] || rawRole.toLowerCase() || 'top';
+  }
+  const emptyAlly = state.allies.find(a => !a.cid) || state.allies[0];
+  const rawRole = emptyAlly ? emptyAlly.role : 'TOP';
+  return ROLE_TO_KEY[rawRole] || 'top';
+}
 
 const ALL_ROLES = ["top", "jungle", "middle", "bottom", "support"];
 const ROLE_NAMES = {
@@ -43,7 +64,6 @@ const recommendationsList = document.getElementById('recommendationsList');
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const roleFilterPills = document.getElementById('pickerRoleFilter');
-const roleButtons = document.getElementById('roleButtons');
 const hudRoleLabel = document.getElementById('hudRoleLabel');
 const hudCandidateMeta = document.getElementById('hudCandidateMeta');
 const allyCountBadge = document.getElementById('allyCount');
@@ -423,17 +443,6 @@ async function init() {
 
 // Setup Event Listeners
 function setupEventListeners() {
-  // Role buttons
-  roleButtons.addEventListener('click', (e) => {
-    const btn = e.target.closest('.role-btn');
-    if (!btn) return;
-    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    assignedRole = btn.dataset.role;
-    hudRoleLabel.textContent = ROLE_NAMES[assignedRole] || assignedRole.toUpperCase();
-    computeRecommendationsClientSide();
-  });
-
   // Search input
   searchInput.addEventListener('input', (e) => {
     state.searchFilter = e.target.value.toLowerCase().trim();
@@ -690,6 +699,7 @@ function renderDraftSlots() {
         <div class="slot-role-row">
           <span class="slot-pick-num">#${idx + 1}</span>
           <span class="slot-role-tag">${slot.role}</span>
+          ${isTarget ? `<span class="slot-active-badge">ACTIVE</span>` : ''}
         </div>
         <span class="slot-champ-name">${slot.name || 'Empty Slot'}</span>
       </div>
@@ -700,17 +710,6 @@ function renderDraftSlots() {
       if (isDraggingAlly) return;
       if (e.target.closest('.slot-remove-btn')) return;
       state.activeTarget = { team: 'ally', index: idx };
-
-      // Sync active HUD role with clicked slot role
-      const roleMap = { 'TOP': 'top', 'JGL': 'jungle', 'MID': 'middle', 'BOT': 'bottom', 'SUP': 'support' };
-      const targetRole = roleMap[slot.role];
-      if (targetRole && assignedRole !== targetRole) {
-        assignedRole = targetRole;
-        document.querySelectorAll('.role-btn').forEach(b => {
-          b.classList.toggle('active', b.dataset.role === assignedRole);
-        });
-        hudRoleLabel.textContent = ROLE_NAMES[assignedRole] || assignedRole.toUpperCase();
-      }
 
       updateTargetBanner();
       renderDraftSlots();
@@ -885,12 +884,17 @@ function computeRecommendationsClientSide() {
   renderDraftSlots();
 
   // 2. Score candidates
+  const currentRole = getActiveAllyRole();
+  if (hudRoleLabel) {
+    hudRoleLabel.textContent = ROLE_NAMES[currentRole] || currentRole.toUpperCase();
+  }
+
   const candidates = [];
   const pickedSet = new Set([...lockedAllies, ...lockedEnemies]);
 
   for (const cid of Object.keys(MATRIX.champions)) {
     if (pickedSet.has(cid)) continue;
-    const res = scoreCandidateJS(cid, assignedRole, lockedAllies, lockedEnemies, inferredRoles);
+    const res = scoreCandidateJS(cid, currentRole, lockedAllies, lockedEnemies, inferredRoles);
     if (res && res.viable) {
       candidates.push(res);
     }
@@ -940,7 +944,8 @@ function computeRecommendationsClientSide() {
 function renderRecommendations(allCandidates) {
   recommendationsList.innerHTML = '';
   if (!allCandidates || allCandidates.length === 0) {
-    recommendationsList.innerHTML = `<div style="padding: 14px; color: var(--text-dim); font-size: 13px;">No viable champions found for ${ROLE_NAMES[assignedRole] || assignedRole.toUpperCase()}.</div>`;
+    const currentRole = getActiveAllyRole();
+    recommendationsList.innerHTML = `<div style="padding: 14px; color: var(--text-dim); font-size: 13px;">No viable champions found for ${ROLE_NAMES[currentRole] || currentRole.toUpperCase()}.</div>`;
     return;
   }
 
