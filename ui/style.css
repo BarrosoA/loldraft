@@ -1,27 +1,27 @@
 :root {
-  --bg-core: #070a12;
-  --bg-surface: #0e1424;
-  --bg-surface-elevated: #151e36;
-  --bg-glass: rgba(14, 20, 36, 0.75);
+  --bg-core: #090a0d;
+  --bg-surface: #12141a;
+  --bg-surface-elevated: #1a1e26;
+  --bg-glass: rgba(18, 20, 26, 0.85);
   
   --gold-primary: #c89b3c;
   --gold-light: #f0e6d2;
   --gold-dark: #785a28;
   --gold-glow: rgba(200, 155, 60, 0.35);
 
-  --blue-team: #0acbe6;
-  --blue-team-glow: rgba(10, 203, 230, 0.3);
-  --blue-surface: rgba(10, 203, 230, 0.08);
+  --blue-team: #1ea1f2;
+  --blue-team-glow: rgba(30, 161, 242, 0.35);
+  --blue-surface: rgba(30, 161, 242, 0.08);
 
   --red-team: #e84057;
-  --red-team-glow: rgba(232, 64, 87, 0.3);
+  --red-team-glow: rgba(232, 64, 87, 0.35);
   --red-surface: rgba(232, 64, 87, 0.08);
 
   --text-main: #f0e6d2;
   --text-muted: #8b99ae;
   --text-dim: #54637a;
 
-  --border-subtle: rgba(200, 155, 60, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.08);
   --border-active: rgba(200, 155, 60, 0.6);
 
   --phys-color: #e67e22;
@@ -43,9 +43,9 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-core);
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(10, 203, 230, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(232, 64, 87, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 50% 90%, rgba(200, 155, 60, 0.05) 0%, transparent 50%);
+    radial-gradient(circle at 15% 15%, rgba(30, 161, 242, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(232, 64, 87, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(200, 155, 60, 0.03) 0%, transparent 50%);
   color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
@@ -120,7 +120,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(7, 10, 18, 0.6);
+  background: rgba(18, 20, 26, 0.7);
   padding: 6px 14px;
   border-radius: 30px;
   border: 1px solid var(--border-subtle);
@@ -161,7 +161,7 @@ body {
 
 .role-btn.active {
   background: var(--gold-primary);
-  color: #070a12;
+  color: #090a0d;
   border-color: var(--gold-light);
   box-shadow: 0 0 12px var(--gold-glow);
 }
@@ -260,7 +260,7 @@ body {
 
 /* Damage Meter */
 .damage-meter-card {
-  background: rgba(7, 10, 18, 0.4);
+  background: rgba(18, 20, 26, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-sm);
   padding: 10px;
@@ -332,7 +332,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: rgba(7, 10, 18, 0.5);
+  background: rgba(18, 20, 26, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -432,7 +432,7 @@ body {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-sm);
-  background: rgba(7, 10, 18, 0.85);
+  background: rgba(9, 10, 13, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
@@ -536,7 +536,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(7, 10, 18, 0.8);
+  background: rgba(18, 20, 26, 0.85);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 8px 14px;
@@ -609,7 +609,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: rgba(7, 10, 18, 0.6);
+  background: rgba(18, 20, 26, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
   padding: 6px;
@@ -748,7 +748,7 @@ body {
 /* Modern Segmented Pill Control */
 .segmented-control {
   display: inline-flex;
-  background: rgba(11, 15, 25, 0.9);
+  background: rgba(18, 20, 26, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
   padding: 3px;
@@ -849,7 +849,7 @@ body {
 .rec-card {
   display: flex;
   flex-direction: column;
-  background: rgba(7, 10, 18, 0.65);
+  background: rgba(18, 20, 26, 0.75);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
@@ -859,17 +859,17 @@ body {
 
 .rec-card.rank-1 {
   border-color: var(--gold-primary);
-  background: linear-gradient(135deg, rgba(200, 155, 60, 0.12), rgba(7, 10, 18, 0.8));
+  background: linear-gradient(135deg, rgba(200, 155, 60, 0.14), rgba(18, 20, 26, 0.9));
 }
 
 .rec-card.worst-pick {
   border-color: rgba(232, 64, 87, 0.25);
-  background: linear-gradient(135deg, rgba(232, 64, 87, 0.08), rgba(7, 10, 18, 0.85));
+  background: linear-gradient(135deg, rgba(232, 64, 87, 0.1), rgba(18, 20, 26, 0.9));
 }
 
 .rec-card.worst-rank-1 {
   border-color: var(--red-team);
-  background: linear-gradient(135deg, rgba(232, 64, 87, 0.18), rgba(7, 10, 18, 0.9));
+  background: linear-gradient(135deg, rgba(232, 64, 87, 0.2), rgba(18, 20, 26, 0.95));
 }
 
 .rec-card-top {
