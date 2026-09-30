@@ -867,12 +867,6 @@ body {
   padding: 10px 12px;
   position: relative;
   cursor: default;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.rec-card:hover {
-  border-color: var(--gold-primary);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .rec-card.rank-1 {
@@ -883,11 +877,6 @@ body {
 .rec-card.worst-pick {
   border-color: rgba(232, 64, 87, 0.25);
   background: linear-gradient(135deg, rgba(232, 64, 87, 0.08), rgba(7, 10, 18, 0.85));
-}
-
-.rec-card.worst-pick:hover {
-  border-color: var(--red-team);
-  box-shadow: 0 4px 16px rgba(232, 64, 87, 0.3);
 }
 
 .rec-card.worst-rank-1 {
