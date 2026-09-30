@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LolDraft • Real-Time Drafting Companion & Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-mark">
+          <span class="brand-icon">⬢</span>
+          <span class="brand-name">LolDraft</span>
+        </div>
+        <div class="patch-badge" id="patchBadge">
+          <span class="pulse-dot"></span>
+          PATCH 16.19 • EMERALD+
+        </div>
+      </div>
+
+      <!-- Role Selector -->
+      <div class="role-selector-wrap">
+        <span class="selector-label">YOUR ASSIGNED ROLE:</span>
+        <div class="role-buttons" id="roleButtons">
+          <button class="role-btn active" data-role="top">
+            <span class="role-icon">🛡️</span> TOP
+          </button>
+          <button class="role-btn" data-role="jungle">
+            <span class="role-icon">🌲</span> JGL
+          </button>
+          <button class="role-btn" data-role="middle">
+            <span class="role-icon">⚡</span> MID
+          </button>
+          <button class="role-btn" data-role="bottom">
+            <span class="role-icon">🏹</span> BOT
+          </button>
+          <button class="role-btn" data-role="support">
+            <span class="role-icon">✨</span> SUP
+          </button>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="resetBtn" title="Reset all slots">
+          <span>↺</span> Clear Draft
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-layout">
+      <!-- Left Column: Ally Team -->
+      <aside class="team-panel ally-panel">
+        <div class="panel-header">
+          <div class="panel-title ally-title">
+            <span class="team-dot blue-dot"></span>
+            <span>YOUR TEAM (BLUE)</span>
+          </div>
+          <span class="badge" id="allyCount">0/5 Locked</span>
+        </div>
+
+        <div class="damage-meter-card">
+          <div class="damage-meter-label">
+            <span>Team Damage Balance</span>
+            <span id="damageSummaryText">50% AD / 50% AP</span>
+          </div>
+          <div class="damage-bar">
+            <div class="dmg-segment dmg-phys" id="dmgPhysBar" style="width: 50%;"></div>
+            <div class="dmg-segment dmg-magic" id="dmgMagicBar" style="width: 50%;"></div>
+          </div>
+          <div class="damage-legend">
+            <span class="legend-item"><span class="legend-dot phys-dot"></span> <span id="physPctLabel">50%</span> AD</span>
+            <span class="legend-item"><span class="legend-dot magic-dot"></span> <span id="magicPctLabel">50%</span> AP</span>
+          </div>
+        </div>
+
+        <div class="slots-container" id="allySlots">
+          <!-- Populated by JS -->
+        </div>
+      </aside>
+
+      <!-- Center Column: Champion Selector Grid -->
+      <section class="picker-panel">
+        <div class="picker-header">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search champion (e.g. Akali, Aatrox, Ahri)..." autocomplete="off">
+            <button id="clearSearchBtn" class="clear-search-btn">✕</button>
+          </div>
+          <div class="filter-pills" id="pickerRoleFilter">
+            <button class="filter-pill active" data-filter="all">ALL</button>
+            <button class="filter-pill" data-filter="top">TOP</button>
+            <button class="filter-pill" data-filter="jungle">JGL</button>
+            <button class="filter-pill" data-filter="middle">MID</button>
+            <button class="filter-pill" data-filter="bottom">BOT</button>
+            <button class="filter-pill" data-filter="support">SUP</button>
+          </div>
+        </div>
+
+        <div class="slot-target-banner" id="slotTargetBanner">
+          <span class="banner-prompt">Click any champion to assign to:</span>
+          <span class="banner-target-name" id="bannerTargetName">Ally Slot #1</span>
+        </div>
+
+        <div class="champions-grid" id="championsGrid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Right Column: Enemy Team -->
+      <aside class="team-panel enemy-panel">
+        <div class="panel-header">
+          <div class="panel-title enemy-title">
+            <span class="team-dot red-dot"></span>
+            <span>ENEMY TEAM (RED)</span>
+          </div>
+          <span class="badge" id="enemyCount">0/5 Locked</span>
+        </div>
+
+        <div class="enemy-inference-info">
+          <span class="info-icon">ℹ️</span>
+          <span>Bayesian role inference automatically predicts hidden enemy lanes.</span>
+        </div>
+
+        <div class="slots-container" id="enemySlots">
+          <!-- Populated by JS -->
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Drawer / Live Recommendation HUD -->
+    <section class="hud-panel">
+      <div class="hud-header">
+        <div class="hud-title-wrap">
+          <span class="hud-indicator"></span>
+          <h2 class="hud-title">REAL-TIME PICKS FOR <span id="hudRoleLabel">TOP</span></h2>
+          <span class="hud-meta" id="hudCandidateMeta">Calculating across 173 champions</span>
+        </div>
+        <div class="hud-legend">
+          <span class="legend-badge fav-badge">Favorable Matchup</span>
+          <span class="legend-badge syn-badge">Team Synergy</span>
+          <span class="legend-badge safe-badge">Safe Blind</span>
+          <span class="legend-badge alert-badge">Damage Warning</span>
+        </div>
+      </div>
+
+      <div class="recommendations-carousel" id="recommendationsList">
+        <!-- Live Cards injected here -->
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
