@@ -805,6 +805,15 @@ function renderChampionGrid() {
   });
 
   championsGrid.innerHTML = '';
+  if (filtered.length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-search-state';
+    emptyState.innerHTML = `<span class="empty-search-icon">🔍</span><span class="empty-search-text"></span>`;
+    emptyState.querySelector('.empty-search-text').textContent = `No champions found matching "${state.searchFilter}"`;
+    championsGrid.appendChild(emptyState);
+    return;
+  }
+
   filtered.forEach(champ => {
     const isPicked = pickedCids.has(champ.cid);
     const card = document.createElement('div');
