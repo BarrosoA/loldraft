@@ -65,37 +65,38 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 7px 20px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   z-index: 10;
 }
 
 .brand-group {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .brand-mark {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .brand-icon {
   color: var(--gold-primary);
-  font-size: 20px;
-  filter: drop-shadow(0 0 8px var(--gold-glow));
+  font-size: 17px;
+  filter: drop-shadow(0 0 6px var(--gold-glow));
 }
 
 .brand-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: var(--text-main);
+  line-height: 1;
 }
 
 .patch-badge {
@@ -174,9 +175,9 @@ body {
 
 .btn {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 8px 14px;
+  padding: 5px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   border: 1px solid var(--border-subtle);
@@ -1020,12 +1021,29 @@ body {
    Prevents champion select grid from becoming vertically squished.
    ========================================================================== */
 @media (max-height: 950px), (max-width: 1440px) {
+  .app-header {
+    padding: 5px 16px;
+  }
+
+  .brand-name {
+    font-size: 16.5px;
+  }
+
+  .main-layout {
+    padding: 8px 14px;
+    gap: 12px;
+  }
+
+  .center-workspace {
+    gap: 10px;
+  }
+
   .hud-panel {
-    padding: 10px 14px 8px;
+    padding: 8px 12px 6px;
   }
 
   .hud-header {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .recommendations-carousel {
