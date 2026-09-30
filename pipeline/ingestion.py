@@ -167,7 +167,7 @@ class LolalyticsScraper:
                     champ_info = {
                         "cid": self._deep_resolve(obj.get("cid"), objs),
                         "slug": champ_slug,
-                        "name": self._deep_resolve(obj.get("champName"), objs),
+                        "name": "Vi" if champ_slug.lower() == "vi" else self._deep_resolve(obj.get("champName"), objs),
                         "patch": self._deep_resolve(obj.get("patch"), objs),
                         "tier": self._deep_resolve(obj.get("tier"), objs),
                     }

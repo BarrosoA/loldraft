@@ -1,0 +1,190 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\geometry{
+  top=1.0in,
+  bottom=1.0in,
+  left=1.0in,
+  right=1.0in
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=blue!70!black,
+  urlcolor=blue!70!black
+}
+
+\title{\textbf{LolDraft: Mathematical Specification for Real-Time Role Inference \& Draft Evaluation Engine}}
+\author{\textbf{LolDraft Engineering Pipeline} \\ \texttt{pipeline/role\_inference.py}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document details the mathematical architecture and statistical formulation implemented in \texttt{pipeline/role\_inference.py}. The system executes sub-5ms Bayesian role marginalization across locked enemy flex picks, calculates expected-value lane counter and cross-map threat deltas, incorporates allied synergy interactions, penalizes early blind picks via vulnerability indexes, and applies probabilistic damage guardrails against tank resistance stacking.
+\end{abstract}
+
+\section{Master Composite Win Rate Score Equation}
+
+For a candidate champion $c$ evaluated in target assigned role $r \in \mathcal{R} = \{\text{top}, \text{jungle}, \text{middle}, \text{bottom}, \text{support}\}$, given locked allied champions $A$ and locked enemy champions $E$, the composite win rate score $\mathcal{S}(c, r \mid A, E)$ is computed as:
+
+\begin{equation}
+\label{eq:master_score}
+\begin{aligned}
+\mathcal{S}(c, r \mid A, E) =\; & w_{\text{base}} \cdot \text{WR}_{\text{base}}(c, r) \\
+& + w_{\text{lane}} \cdot \mathbb{E}[\Delta_{\text{lane}}(c, r \mid E)] \\
+& + w_{\text{threat}} \cdot \mathbb{E}[\Delta_{\text{threat}}(c, r \mid E)] \\
+& + w_{\text{synergy}} \cdot \sum_{a \in A} \Delta_{\text{syn}}(c, a) \\
+& + \mathcal{C}_{\text{comp}}(c, r \mid A, E) \\
+& - \Omega_{\text{blind}}(c, r \mid E)
+\end{aligned}
+\end{equation}
+
+\subsection{Empirical Feature Weights}
+The feature weights $w$ were calibrated via Ridge Logistic Regression across High-ELO (Emerald+) ranked solo queue matches:
+\begin{equation}
+w_{\text{base}} = 1.00, \quad w_{\text{lane}} = 1.35, \quad w_{\text{synergy}} = 0.85, \quad w_{\text{threat}} = 0.60, \quad w_{\text{blind}} = 0.90
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Calibrated Weights and Component Roles}
+\label{tab:weights}
+\begin{tabular}{lll}
+\toprule
+\textbf{Weight} & \textbf{Value} & \textbf{Description} \\
+\midrule
+$w_{\text{base}}$ & $1.00$ & Prior baseline win rate of champion $c$ in role $r$ \\
+$w_{\text{lane}}$ & $1.35$ & Direct head-to-head lane opponent matchup delta \\
+$w_{\text{synergy}}$ & $0.85$ & Allied draft pairing synergy delta with locked teammates \\
+$w_{\text{threat}}$ & $0.60$ & Cross-map / teamfight threat from off-lane enemy champions \\
+$w_{\text{blind}}$ & $0.90$ & Vulnerability penalty scaling when picking blindly \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Exact Bayesian Marginal Role Inference}
+
+Champions in League of Legends frequently flex across multiple positions (e.g., Gragas, Swain, Yasuo). To evaluate matchups without knowing exact lane assignments, the engine computes exact marginal probabilities $P(e = r)$ using permutation likelihoods over the role space $\mathcal{R}$.
+
+\subsection{Champion Role Priors with Regularization}
+Let $p_0(e, r)$ be the historical play rate of enemy champion $e$ in role $r$. To prevent zero-probability locking for off-meta picks, an empirical floor $\epsilon = 0.005$ is applied:
+\begin{equation}
+\tilde{\pi}(e, r) = \max\big(p_0(e, r),\, \epsilon\big), \qquad \pi(e, r) = \frac{\tilde{\pi}(e, r)}{\sum_{r' \in \mathcal{R}} \tilde{\pi}(e, r')}
+\end{equation}
+
+\subsection{Permutation Likelihood over $k$ Locked Enemies}
+Let $k = |E|$ be the number of locked enemy champions. Let $\mathcal{P}(\mathcal{R}, k)$ denote the set of all ordered $k$-tuples of distinct roles drawn from $\mathcal{R}$ ($|\mathcal{P}| = \frac{5!}{(5-k)!}$).
+
+For each assignment tuple $\boldsymbol{\sigma} = (\sigma_1, \sigma_2, \dots, \sigma_k) \in \mathcal{P}(\mathcal{R}, k)$, the joint configuration likelihood is:
+\begin{equation}
+\mathcal{L}(\boldsymbol{\sigma}) = \prod_{i=1}^k \pi(e_i, \sigma_i)
+\end{equation}
+
+The total marginal likelihood across all valid team configurations is:
+\begin{equation}
+\mathcal{Z} = \sum_{\boldsymbol{\sigma} \in \mathcal{P}(\mathcal{R}, k)} \mathcal{L}(\boldsymbol{\sigma})
+\end{equation}
+
+The exact marginal probability that enemy $e_i$ plays role $r$ is:
+\begin{equation}
+P(e_i \to r) = \frac{1}{\mathcal{Z}} \sum_{\substack{\boldsymbol{\sigma} \in \mathcal{P}(\mathcal{R}, k) \\ \sigma_i = r}} \mathcal{L}(\boldsymbol{\sigma})
+\end{equation}
+
+\section{Expected Matchup and Threat Valuation}
+
+\subsection{Direct Lane Counter Delta ($\mathbb{E}[\Delta_{\text{lane}}]$)}
+The expected lane counter delta weights the head-to-head win rate delta against enemy $e$ by the probability that $e$ meets $c$ in the same lane:
+\begin{equation}
+\mathbb{E}[\Delta_{\text{lane}}] = \sum_{e \in E} P(e \to r) \cdot \Delta_{\text{lane}}(c, e, r)
+\end{equation}
+where $\Delta_{\text{lane}}(c, e, r) = \text{WR}(c \text{ vs } e \text{ in } r) - \text{WR}_{\text{base}}(c, r)$.
+
+\subsection{Off-Lane Cross-Map Threat Delta ($\mathbb{E}[\Delta_{\text{threat}}]$)}
+Enemies assigned to different lanes still affect the game through ganks, roams, and 5v5 teamfights. Their threat is weighted by the probability of them \emph{not} playing in candidate lane $r$:
+\begin{equation}
+\mathbb{E}[\Delta_{\text{threat}}] = \sum_{e \in E} \big(1.0 - P(e \to r)\big) \cdot \Delta_{\text{threat}}(c, e)
+\end{equation}
+
+\subsection{Allied Synergy Sum}
+Synergy deltas measure win rate variance when champion $c$ co-occurs with locked ally $a$:
+\begin{equation}
+\Delta_{\text{synergy}} = \sum_{a \in A} \Delta_{\text{syn}}(c, a)
+\end{equation}
+
+\section{Compositional Guardrails: Damage Skew \& Tank Resistances}
+
+\subsection{Core Role Damage Priors}
+To anticipate full-team damage profiles before all roles are locked, empirical carry damage priors are defined for unpicked core positions $\mathcal{R}_{\text{core}} = \{\text{mid}, \text{jungle}, \text{top}, \text{bottom}\}$:
+\begin{equation}
+\pi_{\text{AP}}(\text{mid}) = 0.68, \quad \pi_{\text{AP}}(\text{jungle}) = 0.28, \quad \pi_{\text{AP}}(\text{top}) = 0.24, \quad \pi_{\text{AP}}(\text{bottom}) = 0.05
+\end{equation}
+with $\pi_{\text{AD}}(r) = 1.0 - \pi_{\text{AP}}(r)$.
+
+\subsection{Zero-AP Comp Risk Formulation}
+Let $\mathcal{R}_{\text{open}} \subseteq \mathcal{R}_{\text{core}}$ be the unassigned core roles. If the allied team currently lacks an AP carry ($\text{pct\_magic} < 50\%$) and candidate $c$ is physical ($\text{pct\_physical} \ge 65\%$), the risk that the remaining draft completes with zero magic damage is:
+\begin{equation}
+P(\text{ZeroAP}) = \prod_{r' \in \mathcal{R}_{\text{open}}} \big(1.0 - \pi_{\text{AP}}(r')\big)
+\end{equation}
+
+\subsection{Enemy Tank Armor Stacking Multiplier}
+The enemy team's capacity to punish an all-AD draft is determined by recognized heavy armor tanks $\mathcal{T}_{\text{armor}}$:
+\begin{equation}
+\Phi_{\text{armor}}(E) = \min\left(1.8, \; 0.6 + 0.45 \cdot \sum_{e \in E} \mathbb{I}(e \in \mathcal{T}_{\text{armor}})\right)
+\end{equation}
+
+\subsection{Composition Adjustment Function ($\mathcal{C}_{\text{comp}}$)}
+\begin{itemize}
+  \item \textbf{Heavy AD Compounding / Draft Trap Penalty:} If $P(\text{ZeroAP}) \ge 0.20$ and $|A| \ge 1$:
+  \begin{equation}
+  \mathcal{C}_{\text{comp}} = - \min\big(4.50, \; P(\text{ZeroAP}) \cdot \Phi_{\text{armor}}(E) \cdot 3.60\big)
+  \end{equation}
+  \item \textbf{Composition Anchor AP Bonus:} If no allied AP carry is locked, but candidate $c$ provides primary magic damage ($\text{pct\_magic} \ge 55\%$) with $|A| \ge 2$:
+  \begin{equation}
+  \mathcal{C}_{\text{comp}} = + \min\big(3.50, \; \Phi_{\text{armor}}(E) \cdot 2.50\big)
+  \end{equation}
+\end{itemize}
+(An identical symmetric formula penalizes all-AP compositions against Magic Resist stackers $\mathcal{T}_{\text{MR}}$).
+
+\section{Turn Context \& Blind Pick Penalty}
+
+When picking before the enemy laner is revealed, relying solely on baseline win rate creates severe vulnerability to volatile counter-picks.
+
+\subsection{Total Revealed Lane Probability}
+\begin{equation}
+P_{\text{revealed}} = \min\left(1.0, \; \sum_{e \in E} P(e \to r)\right)
+\end{equation}
+
+\subsection{Blind Vulnerability Penalty ($\Omega_{\text{blind}}$)}
+If $P_{\text{revealed}} < 0.25$, the pick is classified as a \emph{Blind Pick}. The engine penalizes the pick by its historical counter vulnerability index $V_{\text{blind}}(c, r)$ (the average win rate deficit against its 5 worst matchups):
+\begin{equation}
+\Omega_{\text{blind}} = 
+\begin{cases}
+w_{\text{blind}} \cdot V_{\text{blind}}(c, r) \cdot (1.0 - P_{\text{revealed}}), & \text{if } P_{\text{revealed}} < 0.25 \\
+0, & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\section{Summary: Complete Evaluator Pseudocode}
+\begin{equation}
+\boxed{
+\begin{aligned}
+\mathcal{S} = &\; 1.00 \cdot \text{WR}_{\text{base}} \\
+&+ 1.35 \sum_{e} P(e \to r) \Delta_{\text{lane}}(e) \\
+&+ 0.60 \sum_{e} \big(1 - P(e \to r)\big) \Delta_{\text{threat}}(e) \\
+&+ 0.85 \sum_{a} \Delta_{\text{syn}}(a) \\
+&+ \mathcal{C}_{\text{comp}} - \Omega_{\text{blind}}
+\end{aligned}
+}
+\end{equation}
+
+\end{document}

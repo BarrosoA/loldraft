@@ -12,7 +12,7 @@ const checks = [
   { name: 'aria-selected="true"', test: html.includes('aria-selected="true"') },
   { name: 'aria-controls="recommendationsList"', test: html.includes('aria-controls="recommendationsList"') },
   { name: 'app.js?v=2.1.5 cache buster', test: html.includes('app.js?v=2.1.5') },
-  { name: 'style.css?v=2.1.5 cache buster', test: html.includes('style.css?v=2.1.5') },
+  { name: 'style.css?v=2.1.6 cache buster', test: html.includes('style.css?v=2.1.6') },
   { name: 'center-workspace present in html', test: html.includes('class="center-workspace"') },
   { name: 'top roleButtons removed from html', test: !html.includes('id="roleButtons"') },
   { name: 'Drag order text removed from html', test: !html.includes('Drag order') },

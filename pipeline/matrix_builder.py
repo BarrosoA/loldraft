@@ -87,7 +87,7 @@ class MatrixBuilder:
             if not cid:
                 continue
 
-            champ_name = info.get("name", slug.capitalize())
+            champ_name = "Vi" if slug.lower() == "vi" or cid == "254" else info.get("name", slug.capitalize())
             role_priors = champ_data.get("role_priors", {})
 
             # Support both new multi-role schema and legacy flat schema
