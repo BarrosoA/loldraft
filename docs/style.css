@@ -853,11 +853,11 @@ body {
 
 .recommendations-carousel {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 260px);
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 2px;
+  overflow-y: auto;
+  max-height: 250px;
+  padding-right: 2px;
 }
 
 .rec-card {
