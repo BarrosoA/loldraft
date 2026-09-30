@@ -940,8 +940,6 @@ function renderRecommendations(allCandidates) {
       ? `rec-card worst-pick ${isTopOne ? 'worst-rank-1' : ''}`
       : `rec-card ${isTopOne ? 'rank-1' : ''}`;
     card.className = cardClass;
-    card.title = `Click to assign ${item.name} to active draft slot`;
-    card.style.cursor = 'pointer';
 
     const rankLabel = isWorst ? `#${index + 1} AVOID` : `#${index + 1}`;
     const rankClass = isWorst ? `rec-rank-tag worst-rank` : `rec-rank-tag`;
@@ -980,12 +978,7 @@ function renderRecommendations(allCandidates) {
       </div>
     `;
 
-    card.addEventListener('click', () => {
-      const champ = catalog.find(c => String(c.cid) === String(item.cid));
-      if (champ) {
-        assignChampion(champ);
-      }
-    });
+
 
     recommendationsList.appendChild(card);
   });

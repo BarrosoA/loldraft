@@ -866,12 +866,12 @@ body {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   position: relative;
-  transition: all 0.2s ease;
+  cursor: default;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .rec-card:hover {
   border-color: var(--gold-primary);
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
