@@ -217,7 +217,7 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 14px;
-  overflow-y: auto;
+  align-self: start;
 }
 
 .panel-header {
@@ -513,8 +513,17 @@ body {
 }
 
 /* ==========================================================================
-   Center Picker Panel
+   Center Workspace (Picker Panel + Suggested Picks HUD)
    ========================================================================== */
+.center-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .picker-panel {
   display: flex;
   flex-direction: column;
@@ -522,6 +531,7 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 14px;
+  flex: 1;
   min-height: 0;
 }
 
@@ -680,21 +690,23 @@ body {
 }
 
 /* ==========================================================================
-   Bottom Recommendation HUD
+   Recommendation HUD (Center Column Width)
    ========================================================================== */
 .hud-panel {
   background: var(--bg-surface);
-  border-top: 1px solid var(--border-subtle);
-  padding: 12px 20px 16px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .hud-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 
@@ -835,15 +847,17 @@ body {
 }
 
 .hud-panel[data-view="worst"] {
-  border-top-color: rgba(232, 64, 87, 0.25);
+  border-color: rgba(232, 64, 87, 0.35);
 }
 
 
 .recommendations-carousel {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 260px);
+  gap: 10px;
   overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .rec-card {
