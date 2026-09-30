@@ -891,12 +891,15 @@ function computeRecommendationsClientSide() {
     damageSummaryText.textContent = `${p}% AD / ${m}% AP`;
 
     if (p >= 75) {
-      damageSummaryText.textContent = `⚠️ Heavy AD (${p}%) - Vulnerable to Armor`;
+      damageSummaryText.textContent = `⚠️ Heavy AD (${p}%)`;
+      damageSummaryText.title = `Heavy AD skew (${p}%) - Vulnerable to Armor stacking`;
       damageSummaryText.style.color = '#e74c3c';
     } else if (m >= 75) {
-      damageSummaryText.textContent = `⚠️ Heavy AP (${m}%) - Vulnerable to MR`;
+      damageSummaryText.textContent = `⚠️ Heavy AP (${m}%)`;
+      damageSummaryText.title = `Heavy AP skew (${m}%) - Vulnerable to MR stacking`;
       damageSummaryText.style.color = '#e74c3c';
     } else {
+      damageSummaryText.title = '';
       damageSummaryText.style.color = 'var(--text-muted)';
     }
   } else {
@@ -905,6 +908,7 @@ function computeRecommendationsClientSide() {
     physPctLabel.textContent = '50%';
     magicPctLabel.textContent = '50%';
     damageSummaryText.textContent = '50% AD / 50% AP';
+    damageSummaryText.title = '';
     damageSummaryText.style.color = 'var(--text-muted)';
   }
 
