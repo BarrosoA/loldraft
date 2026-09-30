@@ -273,13 +273,13 @@ class DraftScorer:
                     comp_adjustment -= penalty
                     if p_zero_ap_risk >= 0.85:
                         stacker_info = f" into {', '.join(armor_stacker_names)}" if armor_stacker_names else ""
-                        rationale.append(f"Draft Trap: Seals Full AD (-{penalty:.2f}%){stacker_info}. Enemy can build pure Armor.")
+                        rationale.append(f"Draft Trap: Seals Full AD (-{penalty:.2f}%){stacker_info}. Enemy can build pure Armor")
                     else:
-                        rationale.append(f"Damage Warning: Heavy AD compounding (-{penalty:.2f}%). Missing primary AP anchor.")
+                        rationale.append(f"Damage Warning: Heavy AD compounding (-{penalty:.2f}%). Missing primary AP anchor")
             elif not has_locked_ap_carry and cand_is_ap and len(locked_allies) >= 2:
                 bonus = min(3.5, enemy_armor_factor * 2.5)
                 comp_adjustment += bonus
-                rationale.append(f"Composition Anchor: Crucial AP carry (+{bonus:.2f}%). Prevents enemy Armor stacking.")
+                rationale.append(f"Composition Anchor: Crucial AP carry (+{bonus:.2f}%). Prevents enemy Armor stacking")
 
             # Magic Skew Evaluation
             if not has_locked_ad_carry and not cand_is_ad:
@@ -295,13 +295,13 @@ class DraftScorer:
                     comp_adjustment -= penalty
                     if p_zero_ad_risk >= 0.85:
                         stacker_info = f" into {', '.join(mr_stacker_names)}" if mr_stacker_names else ""
-                        rationale.append(f"Draft Trap: Seals Full AP (-{penalty:.2f}%){stacker_info}. Enemy can build pure MR.")
+                        rationale.append(f"Draft Trap: Seals Full AP (-{penalty:.2f}%){stacker_info}. Enemy can build pure MR")
                     else:
-                        rationale.append(f"Damage Warning: Heavy AP compounding (-{penalty:.2f}%).")
+                        rationale.append(f"Damage Warning: Heavy AP compounding (-{penalty:.2f}%)")
             elif not has_locked_ad_carry and cand_is_ad and len(locked_allies) >= 2:
                 bonus = min(3.5, enemy_mr_factor * 2.5)
                 comp_adjustment += bonus
-                rationale.append(f"Composition Anchor: Crucial AD carry (+{bonus:.2f}%). Prevents enemy Magic Resist stacking.")
+                rationale.append(f"Composition Anchor: Crucial AD carry (+{bonus:.2f}%). Prevents enemy Magic Resist stacking")
 
         # Step 5: Turn Context Scoring (Blind pick vs Revealed counter)
         is_blind = total_lane_prob < 0.25
@@ -310,19 +310,19 @@ class DraftScorer:
             unrevealed_factor = 1.0 - total_lane_prob
             blind_penalty = self.weights["blind"] * blind_vuln * unrevealed_factor
             if blind_vuln < 2.0:
-                rationale.append(f"Safe Blind: Low vulnerability rating ({blind_vuln:.1f}% avg counter severity).")
+                rationale.append(f"Safe Blind: Low vulnerability rating ({blind_vuln:.1f}% avg counter severity)")
             else:
-                rationale.append(f"Risky Blind: Punished hard by counters (-{blind_vuln:.1f}% avg).")
+                rationale.append(f"Risky Blind: Punished hard by counters (-{blind_vuln:.1f}% avg)")
         else:
             if expected_lane_delta > 1.0:
-                rationale.append(f"Favorable Lane Matchup (+{expected_lane_delta:.2f}% expected delta).")
+                rationale.append(f"Favorable Lane Matchup (+{expected_lane_delta:.2f}% expected delta)")
             elif expected_lane_delta < -1.0:
-                rationale.append(f"Unfavorable Lane Matchup ({expected_lane_delta:.2f}% expected delta).")
+                rationale.append(f"Unfavorable Lane Matchup ({expected_lane_delta:.2f}% expected delta)")
 
         if total_synergy_delta > 0.8:
-            rationale.append(f"Strong Team Synergy (+{total_synergy_delta:.2f}%).")
+            rationale.append(f"Strong Team Synergy (+{total_synergy_delta:.2f}%)")
         elif total_synergy_delta < -0.8:
-            rationale.append(f"Negative Team Synergy ({total_synergy_delta:.2f}%).")
+            rationale.append(f"Negative Team Synergy ({total_synergy_delta:.2f}%)")
 
         composite_score = (
             self.weights["base"] * baseline_wr

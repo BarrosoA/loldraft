@@ -297,15 +297,15 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
         compAdjustment -= penalty;
         if (pZeroApRisk >= 0.85) {
           const stackerInfo = armorStackerNames.length > 0 ? ` into ${armorStackerNames.join(', ')}` : '';
-          rationale.push(`Draft Trap: Seals Full AD (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure Armor.`);
+          rationale.push(`Draft Trap: Seals Full AD (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure Armor`);
         } else {
-          rationale.push(`Damage Warning: Heavy AD compounding (-${penalty.toFixed(2)}%). Missing primary AP anchor.`);
+          rationale.push(`Damage Warning: Heavy AD compounding (-${penalty.toFixed(2)}%). Missing primary AP anchor`);
         }
       }
     } else if (!hasLockedApCarry && candIsAp && lockedCoreAllies.length >= 2) {
       const bonus = Math.min(3.5, enemyArmorFactor * 2.5);
       compAdjustment += bonus;
-      rationale.push(`Composition Anchor: Crucial AP carry (+${bonus.toFixed(2)}%). Prevents enemy Armor stacking.`);
+      rationale.push(`Composition Anchor: Crucial AP carry (+${bonus.toFixed(2)}%). Prevents enemy Armor stacking`);
     }
 
     // Magic Skew Evaluation
@@ -327,15 +327,15 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
         compAdjustment -= penalty;
         if (pZeroAdRisk >= 0.85) {
           const stackerInfo = mrStackerNames.length > 0 ? ` into ${mrStackerNames.join(', ')}` : '';
-          rationale.push(`Draft Trap: Seals Full AP (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure MR.`);
+          rationale.push(`Draft Trap: Seals Full AP (-${penalty.toFixed(2)}%)${stackerInfo}. Enemy can build pure MR`);
         } else {
-          rationale.push(`Damage Warning: Heavy AP compounding (-${penalty.toFixed(2)}%).`);
+          rationale.push(`Damage Warning: Heavy AP compounding (-${penalty.toFixed(2)}%)`);
         }
       }
     } else if (!hasLockedAdCarry && candIsAd && lockedCoreAllies.length >= 2) {
       const bonus = Math.min(3.5, enemyMrFactor * 2.5);
       compAdjustment += bonus;
-      rationale.push(`Composition Anchor: Crucial AD carry (+${bonus.toFixed(2)}%). Prevents enemy Magic Resist stacking.`);
+      rationale.push(`Composition Anchor: Crucial AD carry (+${bonus.toFixed(2)}%). Prevents enemy Magic Resist stacking`);
     }
   }
 
@@ -345,22 +345,22 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     const unrevealedFactor = 1.0 - totalLaneProb;
     blindPenalty = weights.blind * blindVuln * unrevealedFactor;
     if (blindVuln < 2.0) {
-      rationale.push(`Safe Blind: Low vulnerability rating (${blindVuln.toFixed(1)}% avg counter severity).`);
+      rationale.push(`Safe Blind: Low vulnerability rating (${blindVuln.toFixed(1)}% avg counter severity)`);
     } else {
-      rationale.push(`Risky Blind: Punished hard by counters (-${blindVuln.toFixed(1)}% avg).`);
+      rationale.push(`Risky Blind: Punished hard by counters (-${blindVuln.toFixed(1)}% avg)`);
     }
   } else {
     if (expectedLaneDelta > 1.0) {
-      rationale.push(`Favorable Lane Matchup (+${expectedLaneDelta.toFixed(2)}% expected delta).`);
+      rationale.push(`Favorable Lane Matchup (+${expectedLaneDelta.toFixed(2)}% expected delta)`);
     } else if (expectedLaneDelta < -1.0) {
-      rationale.push(`Unfavorable Lane Matchup (${expectedLaneDelta.toFixed(2)}% expected delta).`);
+      rationale.push(`Unfavorable Lane Matchup (${expectedLaneDelta.toFixed(2)}% expected delta)`);
     }
   }
 
   if (totalSynergyDelta > 0.8) {
-    rationale.push(`Strong Team Synergy (+${totalSynergyDelta.toFixed(2)}%).`);
+    rationale.push(`Strong Team Synergy (+${totalSynergyDelta.toFixed(2)}%)`);
   } else if (totalSynergyDelta < -0.8) {
-    rationale.push(`Negative Team Synergy (${totalSynergyDelta.toFixed(2)}%).`);
+    rationale.push(`Negative Team Synergy (${totalSynergyDelta.toFixed(2)}%)`);
   }
 
   const compositeScore = (
