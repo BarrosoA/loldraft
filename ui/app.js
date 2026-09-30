@@ -65,7 +65,6 @@ const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const roleFilterPills = document.getElementById('pickerRoleFilter');
 const hudRoleLabel = document.getElementById('hudRoleLabel');
-const hudCandidateMeta = document.getElementById('hudCandidateMeta');
 const allyCountBadge = document.getElementById('allyCount');
 const enemyCountBadge = document.getElementById('enemyCount');
 const bannerTargetName = document.getElementById('bannerTargetName');
@@ -880,9 +879,6 @@ function computeRecommendationsClientSide() {
   }
 
   candidates.sort((a, b) => b.composite_score - a.composite_score);
-  const elapsed = (performance.now() - t0).toFixed(1);
-
-  hudCandidateMeta.textContent = `Scored ${candidates.length} viable candidates in ${elapsed}ms (Browser V8 Engine)`;
 
   // 3. Team Damage Balance Meter
   if (lockedAllies.length > 0) {
