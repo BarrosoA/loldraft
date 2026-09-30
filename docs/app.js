@@ -347,7 +347,7 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     if (blindVuln < 2.0) {
       rationale.push(`Safe Blind: Low vulnerability rating (${blindVuln.toFixed(1)}% avg counter severity).`);
     } else {
-      rationale.push(`Risky Blind: Punished hard by counters (${blindVuln.toFixed(1)}% avg counter severity).`);
+      rationale.push(`Risky Blind: Punished hard by counters (-${blindVuln.toFixed(1)}% avg).`);
     }
   } else {
     if (expectedLaneDelta > 1.0) {

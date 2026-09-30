@@ -312,7 +312,7 @@ class DraftScorer:
             if blind_vuln < 2.0:
                 rationale.append(f"Safe Blind: Low vulnerability rating ({blind_vuln:.1f}% avg counter severity).")
             else:
-                rationale.append(f"Risky Blind: Punished hard by counters ({blind_vuln:.1f}% avg counter severity).")
+                rationale.append(f"Risky Blind: Punished hard by counters (-{blind_vuln:.1f}% avg).")
         else:
             if expected_lane_delta > 1.0:
                 rationale.append(f"Favorable Lane Matchup (+{expected_lane_delta:.2f}% expected delta).")
