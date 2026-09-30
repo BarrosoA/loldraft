@@ -591,21 +591,6 @@ body {
   color: var(--gold-primary);
 }
 
-.slot-target-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: rgba(200, 155, 60, 0.08);
-  border: 1px dashed var(--gold-dark);
-  border-radius: var(--radius-sm);
-  margin-bottom: 12px;
-  font-size: 11px;
-}
-
-.banner-prompt { color: var(--text-muted); }
-.banner-target-name { color: var(--gold-primary); font-weight: 700; }
-
 .champions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));

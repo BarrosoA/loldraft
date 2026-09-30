@@ -765,6 +765,7 @@ function renderDraftSlots() {
 }
 
 function updateTargetBanner() {
+  if (!bannerTargetName) return;
   const { team, index } = state.activeTarget;
   if (team === 'ally') {
     bannerTargetName.textContent = `Ally (${state.allies[index].role})`;
