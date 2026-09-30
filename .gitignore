@@ -1,3 +1,7 @@
  __pycache__/
 *.py[cod]
 data/cache/
+data/matches*
+.env
+*.env
+data/*.csv

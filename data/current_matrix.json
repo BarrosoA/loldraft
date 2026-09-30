@@ -11,7 +11,8 @@
     "lane": 1.35,
     "synergy": 0.85,
     "threat": 0.6,
-    "blind": 0.9
+    "blind": 0.9,
+    "duo_synergy": 1.35
   },
   "champions": {
     "266": {

@@ -820,6 +820,14 @@ body {
   box-shadow: 0 2px 10px rgba(232, 64, 87, 0.3);
 }
 
+/* Active State: Off-Meta */
+.seg-btn.active[data-tab="offmeta"] {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(168, 85, 247, 0.08));
+  color: #c084fc;
+  border-color: #a855f7;
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.3);
+}
+
 .seg-badge {
   font-family: 'Outfit', sans-serif;
   font-size: 9px;
@@ -839,6 +847,11 @@ body {
   color: #ff6b7d;
 }
 
+.seg-badge-offmeta {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
 /* Data-View Dynamic HUD Styling */
 .hud-panel[data-view="worst"] .hud-indicator {
   background: var(--red-team);
@@ -851,6 +864,19 @@ body {
 
 .hud-panel[data-view="worst"] {
   border-color: rgba(232, 64, 87, 0.35);
+}
+
+.hud-panel[data-view="offmeta"] .hud-indicator {
+  background: #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+}
+
+.hud-panel[data-view="offmeta"] .hud-title {
+  color: #c084fc;
+}
+
+.hud-panel[data-view="offmeta"] {
+  border-color: rgba(168, 85, 247, 0.35);
 }
 
 
@@ -889,6 +915,16 @@ body {
   background: linear-gradient(135deg, rgba(232, 64, 87, 0.2), rgba(18, 20, 26, 0.95));
 }
 
+.rec-card.offmeta-pick {
+  border-color: rgba(168, 85, 247, 0.25);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(18, 20, 26, 0.9));
+}
+
+.rec-card.offmeta-rank-1 {
+  border-color: #a855f7;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(18, 20, 26, 0.95));
+}
+
 .rec-card-top {
   display: flex;
   align-items: center;
@@ -910,6 +946,12 @@ body {
   color: #ff7588;
   background: rgba(232, 64, 87, 0.2);
   border: 1px solid rgba(232, 64, 87, 0.35);
+}
+
+.rec-rank-tag.offmeta-rank {
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.35);
 }
 
 .rec-avatar {
@@ -945,6 +987,14 @@ body {
   font-size: 16px;
   font-weight: 800;
   color: #2ecc71;
+}
+
+.rec-score-value.worst-score {
+  color: #ff7588;
+}
+
+.rec-score-value.offmeta-score {
+  color: #c084fc;
 }
 
 .rec-deltas-row {
@@ -988,6 +1038,12 @@ body {
   color: #e74c3c;
 }
 
+.rec-badge.badge-offmeta {
+  background: rgba(168, 85, 247, 0.18);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
 /* Custom Scrollbars for Recommendations */
 .recommendations-carousel::-webkit-scrollbar {
   height: 6px;
@@ -1014,6 +1070,14 @@ body {
 
 .hud-panel[data-view="worst"] .recommendations-carousel::-webkit-scrollbar-thumb:hover {
   background: rgba(232, 64, 87, 0.65);
+}
+
+.hud-panel[data-view="offmeta"] .recommendations-carousel::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.35);
+}
+
+.hud-panel[data-view="offmeta"] .recommendations-carousel::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.65);
 }
 
 /* ==========================================================================
@@ -1060,6 +1124,10 @@ body {
 
   .hud-panel[data-view="worst"] .recommendations-carousel {
     scrollbar-color: rgba(232, 64, 87, 0.35) rgba(18, 20, 26, 0.6);
+  }
+
+  .hud-panel[data-view="offmeta"] .recommendations-carousel {
+    scrollbar-color: rgba(168, 85, 247, 0.35) rgba(18, 20, 26, 0.6);
   }
 
   .rec-card {

@@ -109,9 +109,12 @@ class DraftScorer:
             "base": 1.0,
             "lane": 1.35,
             "synergy": 0.85,
+            "duo_synergy": 1.35,
             "threat": 0.60,
             "blind": 0.90
         })
+        if "duo_synergy" not in self.weights:
+            self.weights["duo_synergy"] = 1.35
 
     def get_champion_damage_profile(self, cid: str, preferred_role: Optional[str] = None) -> Dict[str, float]:
         """
@@ -203,18 +206,49 @@ class DraftScorer:
 
         total_lane_prob = min(total_lane_prob, 1.0)
 
-        # Step 3: Compute ally synergies
-        total_synergy_delta = 0.0
+        # Step 3: Compute ally synergies (distinguishing 2v2 duo lane partner from off-lane team allies)
+        total_team_synergy_delta = 0.0
+        duo_synergy_delta = 0.0
         synergy_breakdown = []
+        duo_partner_info = None
+
+        target_duo_role = None
+        if assigned_role == "bottom":
+            target_duo_role = "support"
+        elif assigned_role in ("support", "utility"):
+            target_duo_role = "bottom"
+
         for a_cid in locked_allies:
             a_name = champions.get(str(a_cid), {}).get("name", f"Ally #{a_cid}")
             syn_delta = synergies.get(str(a_cid), 0.0)
-            total_synergy_delta += syn_delta
-            synergy_breakdown.append({
-                "ally_cid": a_cid,
-                "ally_name": a_name,
-                "delta": syn_delta
-            })
+            a_role = ally_roles.get(str(a_cid)) if ally_roles else None
+
+            is_duo = False
+            if target_duo_role is not None and duo_partner_info is None:
+                if target_duo_role == "support" and a_role in ("support", "utility"):
+                    is_duo = True
+                elif target_duo_role == "bottom" and a_role == "bottom":
+                    is_duo = True
+
+            if is_duo:
+                duo_synergy_delta += syn_delta
+                duo_partner_info = {"name": a_name, "delta": syn_delta}
+                synergy_breakdown.append({
+                    "ally_cid": a_cid,
+                    "ally_name": a_name,
+                    "delta": syn_delta,
+                    "is_duo": True
+                })
+            else:
+                total_team_synergy_delta += syn_delta
+                synergy_breakdown.append({
+                    "ally_cid": a_cid,
+                    "ally_name": a_name,
+                    "delta": syn_delta,
+                    "is_duo": False
+                })
+
+        total_synergy_delta = duo_synergy_delta + total_team_synergy_delta
 
         # Step 4: Compositional Guardrails (Enemy-Aware Damage Vulnerability)
         comp_adjustment = 0.0
@@ -319,30 +353,55 @@ class DraftScorer:
             elif expected_lane_delta < -1.0:
                 rationale.append(f"Unfavorable Lane Matchup ({expected_lane_delta:.2f}% expected delta)")
 
-        if total_synergy_delta > 0.8:
-            rationale.append(f"Strong Team Synergy (+{total_synergy_delta:.2f}%)")
-        elif total_synergy_delta < -0.8:
-            rationale.append(f"Negative Team Synergy ({total_synergy_delta:.2f}%)")
+        if duo_partner_info and abs(duo_partner_info["delta"]) >= 0.5:
+            d_val = duo_partner_info["delta"]
+            sign = "+" if d_val > 0 else ""
+            if d_val > 0:
+                rationale.append(f"Bot Duo Synergy ({sign}{d_val:.2f}% with {duo_partner_info['name']})")
+            else:
+                rationale.append(f"Bot Duo Friction ({sign}{d_val:.2f}% with {duo_partner_info['name']})")
+
+        if total_team_synergy_delta > 0.8:
+            rationale.append(f"Strong Team Synergy (+{total_team_synergy_delta:.2f}%)")
+        elif total_team_synergy_delta < -0.8:
+            rationale.append(f"Negative Team Synergy ({total_team_synergy_delta:.2f}%)")
+
+        duo_weight = self.weights.get("duo_synergy", 1.35)
+        team_syn_weight = self.weights.get("synergy", 0.85)
 
         composite_score = (
             self.weights["base"] * baseline_wr
             + self.weights["lane"] * expected_lane_delta
             + self.weights["threat"] * expected_threat_delta
-            + self.weights["synergy"] * total_synergy_delta
+            + (duo_weight * duo_synergy_delta)
+            + (team_syn_weight * total_team_synergy_delta)
             + comp_adjustment
             - blind_penalty
         )
+
+        role_games = role_data.get("games", 0)
+        champ_prior = cand.get("role_priors", {}).get(assigned_role, 0.0)
+        is_meta = (role_games >= 4000) or (champ_prior >= 0.25)
+
+        if not is_meta:
+            fmt_games = f"{role_games/1000:.1f}k" if role_games >= 1000 else str(role_games)
+            rationale.insert(0, f"Off-Meta / Specialist ({fmt_games} games, {champ_prior*100:.1f}% presence)")
 
         return {
             "cid": candidate_cid,
             "name": cand_name,
             "role": assigned_role,
             "viable": True,
+            "is_meta": is_meta,
+            "games": role_games,
+            "role_prior": champ_prior,
             "composite_score": round(composite_score, 2),
             "baseline_wr": baseline_wr,
             "expected_lane_delta": round(expected_lane_delta, 2),
             "expected_threat_delta": round(expected_threat_delta, 2),
             "synergy_delta": round(total_synergy_delta, 2),
+            "duo_synergy_delta": round(duo_synergy_delta, 2),
+            "team_synergy_delta": round(total_team_synergy_delta, 2),
             "composition_adjustment": round(comp_adjustment, 2),
             "blind_penalty": round(blind_penalty, 2),
             "lane_opponent_revealed_prob": round(total_lane_prob, 2),

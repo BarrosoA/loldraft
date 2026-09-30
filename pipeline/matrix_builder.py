@@ -78,6 +78,7 @@ class MatrixBuilder:
                 "base": 1.0,
                 "lane": 1.35,
                 "synergy": 0.85,
+                "duo_synergy": 1.35,
                 "threat": 0.60,
                 "blind": 0.90
             },

@@ -388,6 +388,16 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     rationale.push(`Negative Team Synergy (${totalTeamSynergyDelta.toFixed(2)}%)`);
   }
 
+  const roleGames = roleData.games || 0;
+  const champPrior = champ.role_priors?.[targetRole] || 0.0;
+  const isMeta = (roleGames >= 4000) || (champPrior >= 0.25);
+
+  if (!isMeta) {
+    const formattedGames = roleGames >= 1000 ? `${(roleGames / 1000).toFixed(1)}k` : `${roleGames}`;
+    const pctPrior = (champPrior * 100).toFixed(1);
+    rationale.unshift(`Off-Meta / Specialist (${formattedGames} games, ${pctPrior}% presence)`);
+  }
+
   const compositeScore = (
     weights.base * baselineWr
     + weights.lane * expectedLaneDelta
@@ -403,6 +413,9 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     name: candName,
     role: targetRole,
     viable: true,
+    is_meta: isMeta,
+    games: roleGames,
+    role_prior: champPrior,
     composite_score: Math.round(compositeScore * 100) / 100,
     baseline_wr: baselineWr,
     expected_lane_delta: Math.round(expectedLaneDelta * 100) / 100,
@@ -530,7 +543,13 @@ function setHudView(view) {
   // 3. Update title prefix text
   const hudTitlePrefix = document.getElementById('hudTitlePrefix');
   if (hudTitlePrefix) {
-    hudTitlePrefix.textContent = view === 'worst' ? 'Picks to Avoid' : 'Suggested Picks';
+    if (view === 'worst') {
+      hudTitlePrefix.textContent = 'Picks to Avoid';
+    } else if (view === 'offmeta') {
+      hudTitlePrefix.textContent = 'Off-Meta & Specialist Picks';
+    } else {
+      hudTitlePrefix.textContent = 'Suggested Picks';
+    }
   }
 
   // 4. Render recommendations
@@ -953,22 +972,53 @@ function renderRecommendations(allCandidates) {
     return;
   }
 
-  const isWorst = (state.hudView || 'best') === 'worst';
-  const recs = isWorst 
-    ? allCandidates.slice(-10).reverse() 
-    : allCandidates.slice(0, 10);
+  const currentView = state.hudView || 'best';
+  const metaCandidates = allCandidates.filter(c => c.is_meta);
+  const offmetaCandidates = allCandidates.filter(c => !c.is_meta);
+
+  let recs = [];
+  const isWorst = currentView === 'worst';
+  const isOffmeta = currentView === 'offmeta';
+
+  if (isWorst) {
+    recs = metaCandidates.slice(-10).reverse();
+  } else if (isOffmeta) {
+    recs = offmetaCandidates.slice(0, 10);
+  } else {
+    recs = metaCandidates.slice(0, 10);
+  }
+
+  if (recs.length === 0) {
+    const currentRole = getActiveAllyRole();
+    const roleName = ROLE_NAMES[currentRole] || currentRole.toUpperCase();
+    const emptyMsg = isOffmeta
+      ? `No off-meta specialist picks found for ${roleName}.`
+      : `No candidates found for ${roleName}.`;
+    recommendationsList.innerHTML = `<div style="padding: 14px; color: var(--text-dim); font-size: 13px;">${emptyMsg}</div>`;
+    return;
+  }
 
   recs.forEach((item, index) => {
     const card = document.createElement('div');
     const isTopOne = index === 0;
-    const cardClass = isWorst 
-      ? `rec-card worst-pick ${isTopOne ? 'worst-rank-1' : ''}`
-      : `rec-card ${isTopOne ? 'rank-1' : ''}`;
-    card.className = cardClass;
 
-    const rankLabel = isWorst ? `#${index + 1} AVOID` : `#${index + 1}`;
-    const rankClass = isWorst ? `rec-rank-tag worst-rank` : `rec-rank-tag`;
-    const scoreClass = isWorst ? `rec-score-value worst-score` : `rec-score-value`;
+    let cardClass = `rec-card ${isTopOne ? 'rank-1' : ''}`;
+    let rankLabel = `#${index + 1}`;
+    let rankClass = `rec-rank-tag`;
+    let scoreClass = `rec-score-value`;
+
+    if (isWorst) {
+      cardClass = `rec-card worst-pick ${isTopOne ? 'worst-rank-1' : ''}`;
+      rankLabel = `#${index + 1} AVOID`;
+      rankClass = `rec-rank-tag worst-rank`;
+      scoreClass = `rec-score-value worst-score`;
+    } else if (isOffmeta) {
+      cardClass = `rec-card offmeta-pick ${isTopOne ? 'offmeta-rank-1' : ''}`;
+      rankLabel = `#${index + 1} NICHE`;
+      rankClass = `rec-rank-tag offmeta-rank`;
+      scoreClass = `rec-score-value offmeta-score`;
+    }
+    card.className = cardClass;
 
     const laneDeltaClass = item.expected_lane_delta >= 0 ? 'delta-pos' : 'delta-neg';
     const laneDeltaSign = item.expected_lane_delta >= 0 ? '+' : '';
@@ -976,7 +1026,11 @@ function renderRecommendations(allCandidates) {
     const synDeltaSign = item.synergy_delta >= 0 ? '+' : '';
 
     const badgesHtml = (item.rationale || []).map(r => {
-      const isWarn = r.toLowerCase().includes('risky') || r.toLowerCase().includes('penalty') || r.toLowerCase().includes('negative') || r.toLowerCase().includes('trap') || r.toLowerCase().includes('warning') || r.toLowerCase().includes('unfavorable');
+      const lower = r.toLowerCase();
+      if (lower.includes('off-meta') || lower.includes('specialist')) {
+        return `<span class="rec-badge badge-offmeta">${r}</span>`;
+      }
+      const isWarn = lower.includes('risky') || lower.includes('penalty') || lower.includes('negative') || lower.includes('trap') || lower.includes('warning') || lower.includes('unfavorable');
       return `<span class="rec-badge ${isWarn ? 'badge-warn' : 'badge-good'}">${r}</span>`;
     }).join('');
 
@@ -1002,8 +1056,6 @@ function renderRecommendations(allCandidates) {
         ${badgesHtml}
       </div>
     `;
-
-
 
     recommendationsList.appendChild(card);
   });
