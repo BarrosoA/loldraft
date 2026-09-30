@@ -986,3 +986,68 @@ body {
   background: rgba(231, 76, 60, 0.15);
   color: #e74c3c;
 }
+
+/* Custom Scrollbars for Recommendations */
+.recommendations-carousel::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.recommendations-carousel::-webkit-scrollbar-track {
+  background: rgba(18, 20, 26, 0.6);
+  border-radius: 4px;
+}
+
+.recommendations-carousel::-webkit-scrollbar-thumb {
+  background: rgba(200, 155, 60, 0.35);
+  border-radius: 4px;
+}
+
+.recommendations-carousel::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 155, 60, 0.65);
+}
+
+.hud-panel[data-view="worst"] .recommendations-carousel::-webkit-scrollbar-thumb {
+  background: rgba(232, 64, 87, 0.35);
+}
+
+.hud-panel[data-view="worst"] .recommendations-carousel::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 64, 87, 0.65);
+}
+
+/* ==========================================================================
+   Responsive Laptop Screen Layout (Single Row with Horizontal Scrolling)
+   Prevents champion select grid from becoming vertically squished.
+   ========================================================================== */
+@media (max-height: 950px), (max-width: 1440px) {
+  .hud-panel {
+    padding: 10px 14px 8px;
+  }
+
+  .hud-header {
+    margin-bottom: 8px;
+  }
+
+  .recommendations-carousel {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    gap: 10px;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(200, 155, 60, 0.35) rgba(18, 20, 26, 0.6);
+  }
+
+  .hud-panel[data-view="worst"] .recommendations-carousel {
+    scrollbar-color: rgba(232, 64, 87, 0.35) rgba(18, 20, 26, 0.6);
+  }
+
+  .rec-card {
+    min-width: 215px;
+    max-width: 235px;
+    flex: 0 0 auto;
+  }
+}
+

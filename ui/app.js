@@ -206,7 +206,9 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
   const counters = roleData.counters || {};
   const threats = roleData.threats || {};
   const synergies = roleData.synergies || {};
-  const weights = MATRIX.weights || { base: 1.0, lane: 1.35, synergy: 0.85, threat: 0.60, blind: 0.90 };
+  const weights = MATRIX.weights || { base: 1.0, lane: 1.35, synergy: 0.85, duo_synergy: 1.35, threat: 0.60, blind: 0.90 };
+  const duoWeight = weights.duo_synergy || 1.35;
+  const teamSynWeight = weights.synergy || 0.85;
 
   let expectedLaneDelta = 0.0;
   let expectedThreatDelta = 0.0;
@@ -222,10 +224,25 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
   }
   totalLaneProb = Math.min(totalLaneProb, 1.0);
 
-  let totalSynergyDelta = 0.0;
+  // Distinguish 2v2 duo lane partner from off-lane team allies
+  let duoSynergyDelta = 0.0;
+  let totalTeamSynergyDelta = 0.0;
+  let duoPartnerName = null;
+
+  const targetDuoRoleCode = (targetRole === 'bottom') ? 'SUP' : ((targetRole === 'support' || targetRole === 'utility') ? 'BOT' : null);
+  const duoAlly = targetDuoRoleCode ? state.allies.find(a => a.role === targetDuoRoleCode && a.cid) : null;
+  const duoAllyCid = duoAlly ? String(duoAlly.cid) : null;
+
   for (const aCid of lockedAllies) {
-    totalSynergyDelta += synergies[aCid] || 0.0;
+    const syn = synergies[aCid] || 0.0;
+    if (duoAllyCid && String(aCid) === duoAllyCid) {
+      duoSynergyDelta += syn;
+      duoPartnerName = duoAlly.name || MATRIX.champions[duoAllyCid]?.name || 'Duo';
+    } else {
+      totalTeamSynergyDelta += syn;
+    }
   }
+  const totalSynergyDelta = duoSynergyDelta + totalTeamSynergyDelta;
 
   // Compositional Guardrails: Enemy-Aware Damage Vulnerability
   let compAdjustment = 0.0;
@@ -356,17 +373,27 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
     }
   }
 
-  if (totalSynergyDelta > 0.8) {
-    rationale.push(`Strong Team Synergy (+${totalSynergyDelta.toFixed(2)}%)`);
-  } else if (totalSynergyDelta < -0.8) {
-    rationale.push(`Negative Team Synergy (${totalSynergyDelta.toFixed(2)}%)`);
+  if (duoPartnerName && Math.abs(duoSynergyDelta) >= 0.5) {
+    const sign = duoSynergyDelta > 0 ? '+' : '';
+    if (duoSynergyDelta > 0) {
+      rationale.push(`Bot Duo Synergy (${sign}${duoSynergyDelta.toFixed(2)}% with ${duoPartnerName})`);
+    } else {
+      rationale.push(`Bot Duo Friction (${sign}${duoSynergyDelta.toFixed(2)}% with ${duoPartnerName})`);
+    }
+  }
+
+  if (totalTeamSynergyDelta > 0.8) {
+    rationale.push(`Strong Team Synergy (+${totalTeamSynergyDelta.toFixed(2)}%)`);
+  } else if (totalTeamSynergyDelta < -0.8) {
+    rationale.push(`Negative Team Synergy (${totalTeamSynergyDelta.toFixed(2)}%)`);
   }
 
   const compositeScore = (
     weights.base * baselineWr
     + weights.lane * expectedLaneDelta
     + weights.threat * expectedThreatDelta
-    + weights.synergy * totalSynergyDelta
+    + (duoWeight * duoSynergyDelta)
+    + (teamSynWeight * totalTeamSynergyDelta)
     + compAdjustment
     - blindPenalty
   );
