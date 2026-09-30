@@ -352,6 +352,87 @@ body {
   position: relative;
 }
 
+.slot-card.draggable-slot {
+  cursor: grab;
+  user-select: none;
+}
+
+.slot-card.draggable-slot:active {
+  cursor: grabbing;
+}
+
+.slot-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  cursor: grab;
+  padding: 4px 2px;
+  margin-left: -3px;
+  border-radius: 4px;
+  opacity: 0.45;
+  transition: opacity 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.slot-card:hover .slot-drag-handle {
+  opacity: 1;
+  color: var(--gold-light);
+}
+
+.slot-drag-handle:active {
+  cursor: grabbing;
+}
+
+.slot-role-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slot-pick-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--blue-team);
+  background: rgba(30, 161, 242, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.slot-card.is-dragging {
+  opacity: 0.35;
+  border: 1px dashed var(--gold-primary);
+  background: rgba(200, 155, 60, 0.06);
+  transform: scale(0.98);
+}
+
+.slot-card.drag-over-top {
+  border-top: 2px solid var(--gold-primary) !important;
+  box-shadow: 0 -4px 10px rgba(200, 155, 60, 0.25);
+}
+
+.slot-card.drag-over-bottom {
+  border-bottom: 2px solid var(--gold-primary) !important;
+  box-shadow: 0 4px 10px rgba(200, 155, 60, 0.25);
+}
+
+.reorder-pill {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 .slot-card:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.15);
