@@ -416,20 +416,6 @@ body {
   border-bottom: 2px solid var(--gold-primary) !important;
 }
 
-.reorder-pill {
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1px 6px;
-  border-radius: 10px;
-  letter-spacing: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
 
 .slot-card:hover {
   background: rgba(255, 255, 255, 0.04);
@@ -864,21 +850,6 @@ body {
   border-top-color: rgba(232, 64, 87, 0.25);
 }
 
-.hud-legend {
-  display: flex;
-  gap: 8px;
-}
-
-.legend-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 12px;
-}
-.fav-badge { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); }
-.syn-badge { background: rgba(52, 152, 219, 0.15); color: #3498db; border: 1px solid rgba(52, 152, 219, 0.3); }
-.safe-badge { background: rgba(241, 196, 15, 0.15); color: #f1c40f; border: 1px solid rgba(241, 196, 15, 0.3); }
-.alert-badge { background: rgba(231, 76, 60, 0.15); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); }
 
 .recommendations-carousel {
   display: grid;
