@@ -4,6 +4,13 @@ let catalog = [];
 let assignedRole = 'top';
 
 const ALL_ROLES = ["top", "jungle", "middle", "bottom", "support"];
+const ROLE_NAMES = {
+  top: 'TOP',
+  jungle: 'JGL',
+  middle: 'MID',
+  bottom: 'BOT',
+  support: 'SUP'
+};
 const EPSILON = 0.005;
 
 // Draft state
@@ -315,7 +322,7 @@ function setupEventListeners() {
     document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     assignedRole = btn.dataset.role;
-    hudRoleLabel.textContent = assignedRole.toUpperCase();
+    hudRoleLabel.textContent = ROLE_NAMES[assignedRole] || assignedRole.toUpperCase();
     computeRecommendationsClientSide();
   });
 
@@ -557,7 +564,7 @@ function renderDraftSlots() {
         document.querySelectorAll('.role-btn').forEach(b => {
           b.classList.toggle('active', b.dataset.role === assignedRole);
         });
-        hudRoleLabel.textContent = assignedRole.toUpperCase();
+        hudRoleLabel.textContent = ROLE_NAMES[assignedRole] || assignedRole.toUpperCase();
       }
 
       updateTargetBanner();
