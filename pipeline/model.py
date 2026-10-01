@@ -165,7 +165,7 @@ Balanced across KR (1,631), EUW (1,308), NA (1,200)
    - Normalized Scoring Weights: base: 1.00, lane: 0.70, synergy: 0.51, threat: 0.88, duo_synergy: 0.69
 
 RED SIDE LEVERAGE:
-   - Consistent +0.15 to +0.20 log-odds across all roles, reflecting R5 counter-pick privilege in high-ELO draft.
+   - Consistent +0.15 to +0.20 log-odds across all roles, reflecting R5 counter-pick privilege in Emerald+ draft.
 ===============================================================================
 """
 

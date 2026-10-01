@@ -6,3 +6,7 @@ data/matches*
 *.env
 data/*.csv
 .vscode/
+scratch/
+*.aux
+*.out
+*.log

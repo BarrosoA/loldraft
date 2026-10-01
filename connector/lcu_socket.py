@@ -14,7 +14,7 @@ import logging
 from typing import Dict, Any, Optional, Callable, List
 import aiohttp
 
-# Ensure project root is in path
+# root in sys path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from connector.lockfile import LCULockfileDetector, LCUCredentials
@@ -22,7 +22,7 @@ from pipeline.role_inference import DraftScorer
 
 logger = logging.getLogger("LolDraftSocket")
 
-# Mapping of Riot assignedPosition to standard role strings
+# riot position to role mapping
 POSITION_MAP = {
     "top": "top",
     "jungle": "jungle",
@@ -63,7 +63,7 @@ class LCUSocketListener:
         timer = session_data.get("timer", {})
         actions = session_data.get("actions", [])
 
-        # Find local player's role
+        # local role
         local_role = "top"
         local_picked = False
         locked_allies = []
@@ -82,14 +82,14 @@ class LCUSocketListener:
                 if cid > 0:
                     locked_allies.append(str(cid))
 
-        # Locked enemies
+        # enemy picks
         locked_enemies = []
         for player in their_team:
             cid = player.get("championId", 0)
             if cid > 0:
                 locked_enemies.append(str(cid))
 
-        # Determine if it is currently the local player's turn to pick
+        # check if local player turn
         is_my_turn = False
         for action_group in actions:
             for act in action_group:
@@ -112,74 +112,120 @@ class LCUSocketListener:
             "time_left": round(timer.get("adjustedTimeLeftInPhase", 0) / 1000.0, 1)
         }
 
-    async def connect_and_listen(self, creds: Optional[LCUCredentials] = None):
+    async def connect_and_listen(self, creds: Optional[LCUCredentials] = None, retry_until_found: bool = True):
         """
         Establishes WSS connection and processes events until disconnect.
         """
-        if not creds:
-            creds = LCULockfileDetector.find_credentials()
-            if not creds:
-                logger.error("League Client is not running. Unable to connect.")
-                return
-
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
-
-        headers = {
-            "Authorization": creds.auth_header
-        }
-
-        logger.info(f"Connecting to League WebSocket at {creds.ws_url}...")
         self._is_running = True
 
-        async with aiohttp.ClientSession() as session:
+        while self._is_running:
+            if not creds:
+                creds = LCULockfileDetector.find_credentials()
+                if not creds:
+                    if not retry_until_found:
+                        logger.error("League Client is not running. Unable to connect.")
+                        return
+                    logger.info("League Client not detected. Waiting for League of Legends... (Press Ctrl+C to cancel)")
+                    while self._is_running and not creds:
+                        try:
+                            await asyncio.sleep(2.0)
+                        except asyncio.CancelledError:
+                            return
+                        creds = LCULockfileDetector.find_credentials()
+                    if not self._is_running:
+                        break
+
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+
+            headers = {
+                "Authorization": creds.auth_header
+            }
+
+            logger.info(f"Connecting to League WebSocket at {creds.ws_url}...")
+
             try:
-                async with session.ws_connect(
-                    creds.ws_url,
-                    headers=headers,
-                    ssl=ssl_ctx
-                ) as ws:
-                    logger.info("Connected to League Client. Subscribing to Champ Select events...")
-                    # Subscribe to champion select session topic (Wamp event #5)
-                    await ws.send_str('[5, "OnJsonApiEvent_lol-champ-select_v1_session"]')
+                async with aiohttp.ClientSession() as session:
+                    # check if champ select already active
+                    try:
+                        async with session.get(
+                            f"{creds.rest_url}/lol-champ-select/v1/session",
+                            headers=headers,
+                            ssl=ssl_ctx
+                        ) as resp:
+                            if resp.status == 200:
+                                session_data = await resp.json()
+                                parsed = self._parse_draft_state(session_data)
+                                if parsed:
+                                    self._last_state_hash = (
+                                        parsed["assigned_role"],
+                                        tuple(parsed["locked_allies"]),
+                                        tuple(parsed["locked_enemies"]),
+                                        parsed["is_my_turn"],
+                                        parsed["phase"]
+                                    )
+                                    logger.info("Champion select already in progress. Synchronizing state...")
+                                    self._handle_draft_update(parsed)
+                    except Exception as e:
+                        logger.debug(f"rest sync error: {e}")
 
-                    async for msg in ws:
-                        if not self._is_running:
-                            break
+                    async with session.ws_connect(
+                        creds.ws_url,
+                        headers=headers,
+                        ssl=ssl_ctx
+                    ) as ws:
+                        logger.info("Connected to League Client. Subscribing to Champ Select events...")
+                        # subscribe to champ select session topic
+                        await ws.send_str('[5, "OnJsonApiEvent_lol-champ-select_v1_session"]')
 
-                        if msg.type == aiohttp.WSMsgType.TEXT:
-                            try:
-                                payload = json.loads(msg.data)
-                                # WAMP format: [opcode, topic, data]
-                                if isinstance(payload, list) and len(payload) >= 3:
-                                    event_data = payload[2]
-                                    session_data = event_data.get("data", {})
-                                    parsed = self._parse_draft_state(session_data)
+                        async for msg in ws:
+                            if not self._is_running:
+                                break
 
-                                    if parsed:
-                                        # Deduplicate heartbeat ticks (only trigger on lock-in or turn change)
-                                        state_hash = (
-                                            parsed["assigned_role"],
-                                            tuple(parsed["locked_allies"]),
-                                            tuple(parsed["locked_enemies"]),
-                                            parsed["is_my_turn"],
-                                            parsed["phase"]
-                                        )
+                            if msg.type == aiohttp.WSMsgType.TEXT:
+                                try:
+                                    payload = json.loads(msg.data)
+                                    # wamp format: [opcode, topic, data]
+                                    if isinstance(payload, list) and len(payload) >= 3:
+                                        event_data = payload[2]
+                                        session_data = event_data.get("data", {})
+                                        parsed = self._parse_draft_state(session_data)
 
-                                        if state_hash != self._last_state_hash:
-                                            self._last_state_hash = state_hash
-                                            self._handle_draft_update(parsed)
+                                        if parsed:
+                                            # deduplicate heartbeat ticks
+                                            state_hash = (
+                                                parsed["assigned_role"],
+                                                tuple(parsed["locked_allies"]),
+                                                tuple(parsed["locked_enemies"]),
+                                                parsed["is_my_turn"],
+                                                parsed["phase"]
+                                            )
 
-                            except Exception as e:
-                                logger.debug(f"Error handling message: {e}")
+                                            if state_hash != self._last_state_hash:
+                                                self._last_state_hash = state_hash
+                                                self._handle_draft_update(parsed)
 
-                        elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
-                            logger.info("WebSocket connection closed.")
-                            break
+                                except Exception as e:
+                                    logger.debug(f"Error handling message: {e}")
+
+                            elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
+                                logger.info("WebSocket connection closed.")
+                                break
 
             except Exception as e:
                 logger.error(f"WebSocket error: {e}")
+
+            if not retry_until_found or not self._is_running:
+                break
+
+            logger.info("Connection closed or game started. Waiting for League client / next match...")
+            creds = None
+            self._last_state_hash = None
+            try:
+                await asyncio.sleep(3.0)
+            except asyncio.CancelledError:
+                return
 
     def _handle_draft_update(self, draft_state: Dict[str, Any]):
         """
@@ -221,7 +267,7 @@ class LCUSocketListener:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-    # Load matrix for live scoring
+    # load matrix for scoring
     matrix_file = "data/current_matrix.json"
     scorer = None
     if os.path.exists(matrix_file):

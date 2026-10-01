@@ -211,7 +211,7 @@ class DraftScorer:
                 "role": assigned_role,
                 "viable": False,
                 "score": -999.0,
-                "rationale": [f"Off-meta: No verified high-ELO data for {cand_name} in {assigned_role.upper()}."]
+                "rationale": [f"Off-meta: No verified Emerald+ data for {cand_name} in {assigned_role.upper()}."]
             }
 
         role_data = roles[assigned_role]

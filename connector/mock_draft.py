@@ -30,8 +30,8 @@ def run_synthetic_draft():
     print(f"      Patch: {matrix.get('patch')} • Engine Latency: < 5ms per event")
     print("=" * 70)
 
-    # Simulation Scenario:
-    # Player assigned role: TOP
+    # sim scenario
+    # player role top
     player_role = "top"
     print(f"\n[DRAFT START] Player assigned role: {player_role.upper()}")
 
@@ -67,7 +67,7 @@ def run_synthetic_draft():
             print(">>> ACTIVE TURN: IT IS YOUR TURN TO PICK! <<<")
 
         t0 = time.perf_counter()
-        # Score all viable candidates
+        # score candidate picks
         candidates = []
         for cid in matrix["champions"].keys():
             if cid in s["allies"] or cid in s["enemies"]:

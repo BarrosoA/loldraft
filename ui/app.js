@@ -1041,7 +1041,7 @@ function renderRecommendations(allCandidates) {
       if (lower.includes('off-meta') || lower.includes('specialist')) {
         return `<span class="rec-badge badge-offmeta">${r}</span>`;
       }
-      const isWarn = lower.includes('risky') || lower.includes('penalty') || lower.includes('negative') || lower.includes('trap') || lower.includes('warning') || lower.includes('unfavorable');
+      const isWarn = lower.includes('risky') || lower.includes('penalty') || lower.includes('negative') || lower.includes('trap') || lower.includes('warning') || lower.includes('unfavorable') || lower.includes('friction');
       return `<span class="rec-badge ${isWarn ? 'badge-warn' : 'badge-good'}">${r}</span>`;
     }).join('');
 

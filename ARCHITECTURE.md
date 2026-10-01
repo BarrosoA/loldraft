@@ -54,7 +54,7 @@ The system is strictly divided into two distinct execution domains:
 ## 3. Data Ingestion & Offline Pipeline (Domain 1)
 
 ### 3.1. Raw Data Extraction
-* **Target Population:** High-ELO (Emerald+) ranked solo queue match data for the current active patch.
+* **Target Population:** Emerald-and-above (Emerald+, covering Skilled and Elite tiers) ranked solo queue match data for the current active patch.
 * **Extraction Modalities:**
   * *Option A (Direct Crawler):* Graph-traversal via Riot API Match-V5 (`GET /lol/match/v5/matches/{matchId}`). Requires ~52,000 requests for 50,000 matches.
   * *Option B (Aggregated Importer - Recommended for MVP):* Ingest pre-aggregated patch statistical tables (~170 champion JSON payloads) in under 30 seconds.
