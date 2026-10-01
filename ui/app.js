@@ -994,7 +994,7 @@ function renderRecommendations(allCandidates) {
   if (isWorst) {
     recs = metaCandidates.slice(-10).reverse();
   } else if (isOffmeta) {
-    recs = offmetaCandidates.slice(0, 10);
+    recs = offmetaCandidates.slice(0, 5);
   } else {
     recs = metaCandidates.slice(0, 10);
   }
