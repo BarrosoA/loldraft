@@ -24,40 +24,6 @@ The goal of **LolDraft** is **not** to act as a standalone match outcome predict
 
 ---
 
-## System Architecture
-
-```
-                                  +------------------------------------+
-                                  |    Riot Games Match Telemetry      |
-                                  | (41,450 Emerald+ Obs: KR, EUW, NA) |
-                                  +-----------------+------------------+
-                                                    |
-                                                    v
-                                  +------------------------------------+
-                                  |  Positional Logistic Regressions   |
-                                  |   (L2 Ridge: Top, Jng, Mid, Bot,   |
-                                  |    Sup - Weight & P-Value Fitting) |
-                                  +-----------------+------------------+
-                                                    |
-                                          Calibrated Role Weights
-                                                    |
-   +------------------------------------+           v            +------------------------------------+
-   |   Riot LCU Client / Mock Replay   |      +-----+-----+      |  Precomputed Matchup Matrix        |
-   | (Authenticated WebSocket / REST)  | ---> |   Scorer  | <--- |  (Baseline WR, Deltas, Synergies,  |
-   +------------------------------------+      |   Engine  |      |   Empirical Bayes Shrinkage M=250) |
-                                              +-----+-----+      +------------------------------------+
-                                                    |
-                                                    v
-                                  +------------------------------------+
-                                  | Real-Time Top-5 Ranked Picks       |
-                                  | - Exact Bayesian Flex Role Priors  |
-                                  | - AP/AD Composition Guardrails     |
-                                  | - Blind Pick Vulnerability Penalty |
-                                  +------------------------------------+
-```
-
----
-
 ## Statistical Weight Estimation & Empirical Results
 
 ### 1. Calibrated Tactical Weights (Logistic Beta Coefficients)
