@@ -31,11 +31,11 @@ Trained across positional subsets from 4,145 Emerald+ matches. The learned param
 
 | Position | Baseline WR | Lane Counter Delta | Team Synergy | Threat Delta | Bot Duo Synergy | Primary Tactical Driver |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Top** | 1.00 (base) | **1.58** (z = +6.21\*\*\*) | 0.95 (z = +3.85\*\*\*) | 0.55 (z = +2.48\*) | — | Isolated 1v1 counter matchup dominance |
-| **Jungle** | 1.00 (base) | **2.18** (z = +4.82\*\*\*) | 1.45 (z = +3.61\*\*\*) | **1.89** (z = +5.20\*\*\*) | — | Roaming threat mitigation & skirmish pressure |
-| **Middle** | 1.00 (base) | **1.80** (z = +4.12\*\*\*) | 1.58 (z = +3.94\*\*\*) | **1.98** (z = +5.23\*\*\*) | — | Cross-map threat coverage & wave priority |
-| **Bottom** | 1.00 (base) | 0.97 (z = +3.52\*\*\*) | 0.42 (p = 0.11 ns) | 0.50 (z = +2.11\*) | 0.63 (z = +1.98\*) | Raw baseline champion power & 2v2 survival |
-| **Support** | 1.00 (base) | 0.70 (z = +2.61\*\*) | 0.51 (z = +1.85 ns) | 0.88 (z = +4.41\*\*\*) | **0.69** (z = +2.29\*) | Duo partner synergy & roaming threat control |
+| **Top** | 1.00 | **1.58\*\*\*** (z = +6.21) | 0.95\*\*\* (z = +3.85) | 0.55\* (z = +2.48) | — | Isolated 1v1 counter matchup dominance |
+| **Jungle** | 1.00 | **2.18\*\*\*** (z = +4.82) | 1.45\*\*\* (z = +3.61) | **1.89\*\*\*** (z = +5.20) | — | Roaming threat mitigation & skirmish pressure |
+| **Middle** | 1.00 | **1.80\*\*\*** (z = +4.12) | 1.58\*\*\* (z = +3.94) | **1.98\*\*\*** (z = +5.23) | — | Cross-map threat coverage & wave priority |
+| **Bottom** | 1.00 | 0.97\*\*\* (z = +3.52) | 0.42 (p = 0.11) | 0.50\* (z = +2.11) | 0.63\* (z = +1.98) | Raw baseline champion power & 2v2 survival |
+| **Support** | 1.00 | 0.70\*\* (z = +2.61) | 0.51 (p = 0.06) | 0.88\*\*\* (z = +4.41) | **0.69\*** (z = +2.29) | Duo partner synergy & roaming threat control |
 
 *Significance codes: \*\*\* p < 0.001, \*\* p < 0.01, \* p < 0.05, ns = not statistically significant.*
 
