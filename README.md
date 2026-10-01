@@ -40,18 +40,11 @@ Trained across positional subsets from 4,145 Emerald+ matches. The learned param
 *Significance codes: \*\*\* p < 0.001, \*\* p < 0.01, \* p < 0.05, ns = not statistically significant.*
 
 ### 2. Decision Function Formulation
-The normalized weights parameterize the live scoring engine:
+The normalized weights parameterize the live scoring engine (matching Eq. 6 in the research paper):
 
-```
-Score(c, r | allies, enemies) = 
-    w_base * WR_base 
-  + w_lane * E[Delta_lane] 
-  + w_threat * Delta_threat 
-  + w_duo * Delta_duo 
-  + w_team * Delta_team 
-  + Comp_Adjustment 
-  - Blind_Penalty
-```
+$$
+\mathcal{S}(c, r \mid A, E) = w_{\text{base}} \text{WR}_{\text{base}} + w_{\text{lane}} \mathbb{E}[\Delta_{\text{lane}}] + w_{\text{threat}} \Delta_{\text{threat}} + w_{\text{duo}} \Delta_{\text{duo}} + w_{\text{syn}} \Delta_{\text{team}} + \mathcal{C}_{\text{comp}} - \Omega_{\text{blind}}
+$$
 
 ### 3. Draft Advantage Validation (Quintile Match Lift)
 Evaluating observed game outcomes grouped by model draft score advantage on out-of-sample matches:
