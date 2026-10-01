@@ -6,7 +6,7 @@
 [![Inference Latency](https://img.shields.io/badge/Latency-%3C5ms-success.svg)](connector/lcu_socket.py)
 [![Paper PDF](https://img.shields.io/badge/Paper-8--Page_PDF-red.svg)](docs/loldraft_ml_paper.pdf)
 
-> Autonomous, real-time draft recommendation system that resolves champion ambiguity through Dirichlet-multinomial Bayesian role inference and evaluates composite lane and team synergies within 5 milliseconds.
+> Autonomous, real-time draft recommendation system that resolves champion ambiguity through exact Bayesian role marginalization and evaluates composite lane and team synergies within 5 milliseconds.
 
 ---
 
@@ -17,7 +17,7 @@ Champion select in competitive League of Legends presents a search space exceedi
 **LolDraft** bridges modern machine learning and live client execution:
 - **Predictive Accuracy:** Achieves **56.4% out-of-sample win prediction accuracy** across 100,000 Patch 14.23 solo-queue and professional matches (+6.4% over raw individual champion win rates).
 - **Sub-5ms Inference Latency:** Precomputes high-dimensional pairwise synergy and counter tensors to evaluate the entire 168+ champion roster in under 5 ms per draft event.
-- **Dynamic Ambiguity Resolution:** Employs a Dirichlet-multinomial Bayesian updater to dynamically deduce opponent lane assignments for multi-role flex champions (e.g., Gragas, Poppy, Pantheon) as draft turns progress.
+- **Dynamic Ambiguity Resolution:** Employs an exact Bayesian marginal updater to dynamically deduce opponent lane assignments for multi-role flex champions (e.g., Gragas, Poppy, Pantheon) by evaluating all valid injective role permutations as draft turns progress.
 - **Riot LCU Integration:** Features a zero-configuration companion that hooks into the active `LeagueClientUx` authenticated WebSocket/REST interface to deliver real-time counter-pick recommendations during live matches.
 
 ---
@@ -41,8 +41,8 @@ Champion select in competitive League of Legends presents a search space exceedi
                                    v                                         v
                      +-------------+-------------+             +-------------+-------------+
                      | Bayesian Role Inference   |             | Composite Scoring Engine  |
-                     | - Dirichlet Prior Vectors |             | - Baseline Win Rates      |
-                     | - MCMC Match Assignment   |             | - Pairwise Lane Deltas    |
+                     | - Categorical Role Priors |             | - Baseline Win Rates      |
+                     | - Exact Permutation Bayes |             | - Pairwise Lane Deltas    |
                      | - Flex Ambiguity Scoring  |             | - Pairwise Team Synergies |
                      +-------------+-------------+             | - AD/AP Composition Guard |
                                    |                           +-------------+-------------+
@@ -66,7 +66,7 @@ Evaluated on an out-of-sample test split of 20,000 matches from Patch 14.23 (Eme
 | **Independent Baseline (Win Rate only)** | 50.0% | 0.6931 | < 0.1 ms | None (Unaware) |
 | **Naive Direct Lane Counter** | 52.8% | 0.6784 | 0.8 ms | Heuristic static role |
 | **Unregularized Pairwise Synergy** | 53.9% | 0.6812 | 1.9 ms | Vulnerable to flex traps |
-| **LolDraft (Bayesian Role Inference + Regularized Synergies)** | **56.4%** | **0.6542** | **4.2 ms** | **Dynamic Bayesian Dirichlet** |
+| **LolDraft (Bayesian Role Inference + Regularized Synergies)** | **56.4%** | **0.6542** | **4.2 ms** | **Dynamic Bayesian Marginals** |
 
 ---
 
@@ -118,7 +118,7 @@ loldraft/
 │   └── writing_style.md     # Project stylometric and editorial guidelines
 ├── pipeline/                # Machine learning core
 │   ├── model.py             # Matchup feature extractor and training pipeline
-│   └── role_inference.py   # Dirichlet-multinomial Bayesian scorer
+│   └── role_inference.py   # Bayesian role inference & draft scorer engine
 ├── ui/                      # Visual client simulator
 │   ├── index.html           # Dark-mode responsive HUD interface
 │   ├── app.js               # Client-side scoring and candidate engine
