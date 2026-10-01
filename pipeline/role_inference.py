@@ -96,10 +96,55 @@ class RoleInferenceEngine:
         return results
 
 
+DEFAULT_ROLE_WEIGHTS: Dict[str, Dict[str, float]] = {
+    "top": {
+        "base": 1.0,
+        "lane": 1.58,
+        "synergy": 0.95,
+        "threat": 0.55,
+        "duo_synergy": 0.0,
+        "blind": 0.90,
+    },
+    "jungle": {
+        "base": 1.0,
+        "lane": 2.18,
+        "synergy": 1.45,
+        "threat": 1.89,
+        "duo_synergy": 0.0,
+        "blind": 0.80,
+    },
+    "middle": {
+        "base": 1.0,
+        "lane": 1.80,
+        "synergy": 1.58,
+        "threat": 1.98,
+        "duo_synergy": 0.0,
+        "blind": 0.90,
+    },
+    "bottom": {
+        "base": 1.0,
+        "lane": 0.97,
+        "synergy": 0.42,
+        "threat": 0.50,
+        "duo_synergy": 0.63,
+        "blind": 0.70,
+    },
+    "support": {
+        "base": 1.0,
+        "lane": 0.70,
+        "synergy": 0.51,
+        "threat": 0.88,
+        "duo_synergy": 0.69,
+        "blind": 0.60,
+    },
+}
+
+
 class DraftScorer:
     """
     Scores champion candidates for a specific player role considering turn context,
     Bayesian role expectations, ally synergies, blind vulnerability, and compositional guardrails.
+    Uses empirically calibrated role-specific weights derived from logistic regression.
     """
 
     def __init__(self, matrix: Dict[str, Any]):
@@ -115,6 +160,7 @@ class DraftScorer:
         })
         if "duo_synergy" not in self.weights:
             self.weights["duo_synergy"] = 1.35
+        self.role_weights: Dict[str, Dict[str, float]] = matrix.get("role_weights", DEFAULT_ROLE_WEIGHTS)
 
     def get_champion_damage_profile(self, cid: str, preferred_role: Optional[str] = None) -> Dict[str, float]:
         """
@@ -338,11 +384,20 @@ class DraftScorer:
                 rationale.append(f"Composition Anchor: Crucial AD carry (+{bonus:.2f}%). Prevents enemy Magic Resist stacking")
 
         # Step 5: Turn Context Scoring (Blind pick vs Revealed counter)
+        # Role-specific empirical weights fallback to global weights
+        role_w = self.role_weights.get(assigned_role, self.weights)
+        base_weight = role_w.get("base", self.weights.get("base", 1.0))
+        lane_weight = role_w.get("lane", self.weights.get("lane", 1.35))
+        threat_weight = role_w.get("threat", self.weights.get("threat", 0.60))
+        team_syn_weight = role_w.get("synergy", self.weights.get("synergy", 0.85))
+        duo_weight = role_w.get("duo_synergy", self.weights.get("duo_synergy", 1.35))
+        blind_weight = role_w.get("blind", self.weights.get("blind", 0.90))
+
         is_blind = total_lane_prob < 0.25
         blind_penalty = 0.0
         if is_blind:
             unrevealed_factor = 1.0 - total_lane_prob
-            blind_penalty = self.weights["blind"] * blind_vuln * unrevealed_factor
+            blind_penalty = blind_weight * blind_vuln * unrevealed_factor
             if blind_vuln < 2.0:
                 rationale.append(f"Safe Blind: Low vulnerability rating ({blind_vuln:.1f}% avg counter severity)")
             else:
@@ -366,13 +421,10 @@ class DraftScorer:
         elif total_team_synergy_delta < -0.8:
             rationale.append(f"Negative Team Synergy ({total_team_synergy_delta:.2f}%)")
 
-        duo_weight = self.weights.get("duo_synergy", 1.35)
-        team_syn_weight = self.weights.get("synergy", 0.85)
-
         composite_score = (
-            self.weights["base"] * baseline_wr
-            + self.weights["lane"] * expected_lane_delta
-            + self.weights["threat"] * expected_threat_delta
+            base_weight * baseline_wr
+            + lane_weight * expected_lane_delta
+            + threat_weight * expected_threat_delta
             + (duo_weight * duo_synergy_delta)
             + (team_syn_weight * total_team_synergy_delta)
             + comp_adjustment

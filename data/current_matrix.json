@@ -14,6 +14,13 @@
     "blind": 0.9,
     "duo_synergy": 1.35
   },
+  "role_weights": {
+    "top": {"base": 1.0, "lane": 1.58, "synergy": 0.95, "threat": 0.55, "duo_synergy": 0.0, "blind": 0.9},
+    "jungle": {"base": 1.0, "lane": 2.18, "synergy": 1.45, "threat": 1.89, "duo_synergy": 0.0, "blind": 0.8},
+    "middle": {"base": 1.0, "lane": 1.8, "synergy": 1.58, "threat": 1.98, "duo_synergy": 0.0, "blind": 0.9},
+    "bottom": {"base": 1.0, "lane": 0.97, "synergy": 0.42, "threat": 0.5, "duo_synergy": 0.63, "blind": 0.7},
+    "support": {"base": 1.0, "lane": 0.7, "synergy": 0.51, "threat": 0.88, "duo_synergy": 0.69, "blind": 0.6}
+  },
   "champions": {
     "266": {
       "name": "Aatrox",

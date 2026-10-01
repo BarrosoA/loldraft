@@ -82,6 +82,13 @@ class MatrixBuilder:
                 "threat": 0.60,
                 "blind": 0.90
             },
+            "role_weights": {
+                "top": {"base": 1.0, "lane": 1.58, "synergy": 0.95, "threat": 0.55, "duo_synergy": 0.0, "blind": 0.90},
+                "jungle": {"base": 1.0, "lane": 2.18, "synergy": 1.45, "threat": 1.89, "duo_synergy": 0.0, "blind": 0.80},
+                "middle": {"base": 1.0, "lane": 1.80, "synergy": 1.58, "threat": 1.98, "duo_synergy": 0.0, "blind": 0.90},
+                "bottom": {"base": 1.0, "lane": 0.97, "synergy": 0.42, "threat": 0.50, "duo_synergy": 0.63, "blind": 0.70},
+                "support": {"base": 1.0, "lane": 0.70, "synergy": 0.51, "threat": 0.88, "duo_synergy": 0.69, "blind": 0.60}
+            },
             "champions": {}
         }
 

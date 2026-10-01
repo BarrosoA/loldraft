@@ -206,9 +206,20 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
   const counters = roleData.counters || {};
   const threats = roleData.threats || {};
   const synergies = roleData.synergies || {};
-  const weights = MATRIX.weights || { base: 1.0, lane: 1.35, synergy: 0.85, duo_synergy: 1.35, threat: 0.60, blind: 0.90 };
-  const duoWeight = weights.duo_synergy || 1.35;
-  const teamSynWeight = weights.synergy || 0.85;
+  const DEFAULT_ROLE_WEIGHTS = {
+    top: { base: 1.0, lane: 1.58, synergy: 0.95, threat: 0.55, duo_synergy: 0.0, blind: 0.90 },
+    jungle: { base: 1.0, lane: 2.18, synergy: 1.45, threat: 1.89, duo_synergy: 0.0, blind: 0.80 },
+    middle: { base: 1.0, lane: 1.80, synergy: 1.58, threat: 1.98, duo_synergy: 0.0, blind: 0.90 },
+    bottom: { base: 1.0, lane: 0.97, synergy: 0.42, threat: 0.50, duo_synergy: 0.63, blind: 0.70 },
+    support: { base: 1.0, lane: 0.70, synergy: 0.51, threat: 0.88, duo_synergy: 0.69, blind: 0.60 }
+  };
+  const roleWeights = MATRIX.role_weights?.[targetRole] || DEFAULT_ROLE_WEIGHTS[targetRole] || MATRIX.weights || { base: 1.0, lane: 1.35, synergy: 0.85, duo_synergy: 1.35, threat: 0.60, blind: 0.90 };
+  const baseWeight = (roleWeights.base !== undefined) ? roleWeights.base : 1.0;
+  const laneWeight = (roleWeights.lane !== undefined) ? roleWeights.lane : 1.35;
+  const threatWeight = (roleWeights.threat !== undefined) ? roleWeights.threat : 0.60;
+  const blindWeight = (roleWeights.blind !== undefined) ? roleWeights.blind : 0.90;
+  const duoWeight = (roleWeights.duo_synergy !== undefined) ? roleWeights.duo_synergy : 1.35;
+  const teamSynWeight = (roleWeights.synergy !== undefined) ? roleWeights.synergy : 0.85;
 
   let expectedLaneDelta = 0.0;
   let expectedThreatDelta = 0.0;
@@ -359,7 +370,7 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
   let blindPenalty = 0.0;
   if (isBlind) {
     const unrevealedFactor = 1.0 - totalLaneProb;
-    blindPenalty = weights.blind * blindVuln * unrevealedFactor;
+    blindPenalty = blindWeight * blindVuln * unrevealedFactor;
     if (blindVuln < 2.0) {
       rationale.push(`Safe Blind: Low vulnerability rating (${blindVuln.toFixed(1)}% avg counter severity)`);
     } else {
@@ -399,9 +410,9 @@ function scoreCandidateJS(candidateCid, targetRole, lockedAllies, lockedEnemies,
   }
 
   const compositeScore = (
-    weights.base * baselineWr
-    + weights.lane * expectedLaneDelta
-    + weights.threat * expectedThreatDelta
+    baseWeight * baselineWr
+    + laneWeight * expectedLaneDelta
+    + threatWeight * expectedThreatDelta
     + (duoWeight * duoSynergyDelta)
     + (teamSynWeight * totalTeamSynergyDelta)
     + compAdjustment
