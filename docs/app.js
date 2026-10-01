@@ -1053,7 +1053,7 @@ function renderRecommendations(allCandidates) {
         </div>
         <div class="rec-champ-info">
           <span class="rec-champ-name">${item.name}</span>
-          <span class="${scoreClass}">${item.composite_score}%</span>
+          <span class="${scoreClass}">${item.composite_score}</span>
         </div>
       </div>
 

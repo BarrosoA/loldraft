@@ -83,7 +83,7 @@ def run_synthetic_draft():
         print(f"TOP 4 RECOMMENDED PICKS FOR {player_role.upper()}:")
         for i, c in enumerate(candidates[:4], 1):
             lane_str = f"+{c['expected_lane_delta']}%" if c['expected_lane_delta'] >= 0 else f"{c['expected_lane_delta']}%"
-            print(f"  #{i} {c['name']:<12} | Score: {c['composite_score']}% | Base: {c['baseline_wr']}% | Lane: {lane_str}")
+            print(f"  #{i} {c['name']:<12} | Rating: {c['composite_score']} | Base: {c['baseline_wr']}% | Lane: {lane_str}")
             print(f"     Rationale: {c['rationale']}")
 
     print("\n" + "=" * 70)
