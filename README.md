@@ -72,8 +72,4 @@ For detailed mathematical derivations, Bayesian prior calibration, composition p
 
 - **[LolDraft Technical Paper (PDF)](docs/loldraft_ml_paper.pdf)**: *António Barroso, October 2026* (8 pages, IEEE/ACM style).
 
----
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
